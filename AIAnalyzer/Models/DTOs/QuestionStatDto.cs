@@ -1,0 +1,16 @@
+﻿using AIAnalyzer.Models.Enums;
+
+namespace AIAnalyzer.Models.DTOs
+{
+    public class QuestionStatDto
+    {
+        public string QuestionId { get; set; }
+        public string QuestionText { get; set; }
+        public int CorrectCount { get; set; }
+        public int ErrorsCount { get; set; }
+        public ErrorZone Zone { get; set; }
+
+        // Оставляем поле для напарницы, куда её ИИ-сервис запишет ответ
+        public string AiRecommendation { get; set; }
+    }
+}
