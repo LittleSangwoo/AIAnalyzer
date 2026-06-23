@@ -1,4 +1,6 @@
-﻿namespace AIAnalyzer.ViewModels
+﻿using AIAnalyzer.Models.DTOs;
+
+namespace AIAnalyzer.ViewModels
 {
     public class AnalysisResultViewModel
     {

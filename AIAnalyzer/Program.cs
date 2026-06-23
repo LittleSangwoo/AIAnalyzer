@@ -1,7 +1,11 @@
+using AIAnalyzer.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddScoped<ITestAnalysisService, TestAnalysisService>();
 
 var app = builder.Build();
 
