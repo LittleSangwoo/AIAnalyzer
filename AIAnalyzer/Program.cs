@@ -5,6 +5,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Подключаем провайдер кодировок для поддержки русского Excel (Windows-1251)
+System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
 // 1. Добавляем фабрику HttpClient (нужна для твоих ИИ-запросов)
 builder.Services.AddHttpClient();
 

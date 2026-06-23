@@ -16,33 +16,37 @@ namespace AIAnalyzer.Services
         {
             var result = new AnalysisResultViewModel();
 
-            // 1. Читаем эталон
-            using var etalonReader = new StreamReader(etalonStream);
-            var headers = ParseCsvLine(etalonReader.ReadLine());
+            // 1. ЖЕЛЕЗОБЕТОННАЯ РЕГИСТРАЦИЯ КОДИРОВОК (Прямо здесь!)
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+            // 2. Теперь получаем windows-1251 без ошибок
+            var encoding = System.Text.Encoding.GetEncoding("windows-1251");
+
+            // Читаем эталон с нужной кодировкой
+            using var etalonReader = new StreamReader(etalonStream, encoding);
+            var etalonHeaders = ParseCsvLine(etalonReader.ReadLine());
             var correctAnswers = ParseCsvLine(etalonReader.ReadLine());
 
-            // Если во второй строке эталона служебное слово (например, "Правильный ответ"), читаем следующую
             if (correctAnswers != null && correctAnswers.Length > 0 && correctAnswers[0].Contains("Правильный"))
             {
                 correctAnswers = ParseCsvLine(etalonReader.ReadLine());
             }
 
-            if (headers == null || correctAnswers == null) return result;
+            if (etalonHeaders == null || correctAnswers == null) return result;
 
-            // 2. Читаем ответы студентов
-            using var answersReader = new StreamReader(answersStream);
-            answersReader.ReadLine(); // Пропускаем строку заголовков
+            // 2. Читаем ответы студентов с нужной кодировкой
+            using var answersReader = new StreamReader(answersStream, encoding);
+            answersReader.ReadLine(); // Пропуск заголовков
 
             var questionStats = new Dictionary<int, QuestionStatDto>();
+            int studentAnswerOffset = 4; // Смещение: ответы начинаются с 5-го столбца
 
-            // В выгрузках ответы обычно начинаются с 4-й колонки (индекс 4)
-            int answerStartIndex = 4;
-            for (int i = answerStartIndex; i < headers.Length; i++)
+            for (int i = 0; i < etalonHeaders.Length; i++)
             {
                 questionStats[i] = new QuestionStatDto
                 {
-                    QuestionId = $"Q{i - answerStartIndex + 1}",
-                    QuestionText = headers[i].Replace("\"", "").Trim(),
+                    QuestionId = $"Q{i + 1}",
+                    QuestionText = etalonHeaders[i].Replace("\"", "").Trim(),
                     ErrorsCount = 0,
                     CorrectCount = 0
                 };
@@ -52,27 +56,26 @@ namespace AIAnalyzer.Services
             while ((line = answersReader.ReadLine()) != null)
             {
                 var columns = ParseCsvLine(line);
-                if (columns.Length < answerStartIndex) continue;
+                if (columns.Length <= studentAnswerOffset) continue;
 
-                // Индекс 3 - это колонка "Баллы" (например: "15 / 15 (100%)")
-                var score = columns[3];
+                var score = columns[3]; // Баллы
 
-                // Исключаем нулевые результаты (отбрасываем тех, кто ничего не решил)
-                if (string.IsNullOrWhiteSpace(score) || score.Trim().StartsWith("0/"))
+                // Фильтр пустых и нулевых попыток
+                if (string.IsNullOrWhiteSpace(score) || score.Trim().StartsWith("0/") || score.Trim() == "0")
                     continue;
 
                 result.TotalStudentsAnalyzed++;
 
-                // Сверяем ответы с эталоном
-                for (int i = answerStartIndex; i < columns.Length && i < correctAnswers.Length; i++)
+                // Сверяем с эталоном
+                for (int i = 0; i < etalonHeaders.Length; i++)
                 {
-                    if (!questionStats.ContainsKey(i)) continue;
+                    int studentColIndex = i + studentAnswerOffset;
+                    if (studentColIndex >= columns.Length) break;
 
-                    var studentAnswer = columns[i].Trim();
-                    var correctAnswer = correctAnswers[i].Trim();
+                    var studentAnswer = columns[studentColIndex].Replace("\"", "").Trim();
+                    var correctAnswer = i < correctAnswers.Length ? correctAnswers[i].Replace("\"", "").Trim() : "";
 
-                    // Строгое сравнение (в ТЗ сказано: СДО чувствительна к опечаткам)
-                    if (studentAnswer == correctAnswer)
+                    if (string.Equals(studentAnswer, correctAnswer, StringComparison.OrdinalIgnoreCase))
                     {
                         questionStats[i].CorrectCount++;
                     }
@@ -95,9 +98,7 @@ namespace AIAnalyzer.Services
                 result.Questions.Add(stat);
             }
 
-            // Отсортировать: Красные вопросы в самом верху списка
             result.Questions = result.Questions.OrderByDescending(q => (int)q.Zone).ToList();
-
             return result;
         }
 

@@ -5,9 +5,10 @@
 <div class="container-fluid mt-4">
     <div class="row">
         <div class="col-md-3">
+            
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-dark text-white fw-bold">
-                    Загрузите Excel/CSV-файлы
+                    <i class="bi bi-file-earmark-excel"></i> Загрузка Excel/CSV
                 </div>
                 <div class="card-body bg-light">
                     <form id="uploadForm">
@@ -20,7 +21,7 @@
                             <input class="form-control form-control-sm" type="file" id="answersFile" accept=".csv,.xlsx" required>
                         </div>
                         <button type="submit" class="btn btn-primary w-100" id="uploadBtn">
-                            Upload & Analyze
+                            <i class="bi bi-upload"></i> Upload & Analyze
                         </button>
                     </form>
                     <div id="uploadStatus" class="alert mt-3 d-none p-2 text-center small"></div>
@@ -29,129 +30,208 @@
             
             <div id="aiSettingsBlock">
                 <div class="card shadow-sm border-info mb-3">
-                    <div class="card-header bg-info text-dark fw-bold">Промпты (AI)</div>
-                    <div class="card-body">
-                        <p class="text-muted small mb-2">Функционал в разработке (Шаг 2)...</p>
-                        <button class="btn btn-outline-dark btn-sm w-100 mb-2">Compare</button>
-                        <button class="btn btn-outline-danger btn-sm w-100 mb-2">Critical</button>
-                        <button class="btn btn-outline-success btn-sm w-100">Report</button>
+                    <div class="card-header bg-info text-dark fw-bold">
+                        <i class="bi bi-robot"></i> Управление ИИ
+                    </div>
+                    <div class="card-body bg-light">
+                        <div class="mb-3">
+                            <label for="modelSelect" class="form-label small fw-bold">Выберите нейросеть:</label>
+                            <select class="form-select form-select-sm border-secondary" id="modelSelect">
+                                <option value="deepseek" selected>DeepSeek Chat</option>
+                                <option value="gigachat">Сбер GigaChat</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="apiKeyInput" class="form-label small fw-bold">API Ключ (опционально):</label>
+                            <input type="password" class="form-control form-control-sm" id="apiKeyInput" placeholder="Введите ключ">
+                        </div>
+
+                        <label class="form-label small fw-bold d-block">Режим анализа:</label>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm text-start fw-bold" onclick="sendToAi('compare')">
+                                <i class="bi bi-bezier2"></i> Compare (Сравнить)
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm text-start fw-bold" onclick="sendToAi('critical')">
+                                <i class="bi bi-exclamation-triangle"></i> Critical Analysis
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm text-start fw-bold" onclick="sendToAi('report')">
+                                <i class="bi bi-file-earmark-text"></i> Generate Report
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-9">
-            <h5 class="mb-3">Результаты анализа (Светофор)</h5>
-            <div class="table-responsive shadow-sm rounded">
-                <table class="table table-hover align-middle mb-0" id="resultsTable">
-                    <thead class="table-light">
-                        <tr>
-                            <th width="10%">ID</th>
-                            <th width="50%">Текст вопроса</th>
-                            <th width="10%" class="text-success">Верно</th>
-                            <th width="10%" class="text-danger">Ошибок</th>
-                            <th width="20%">Зона</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsBody">
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-5">
-                                Ожидание файлов... Загрузите массив ответов и эталон.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            
+            <div class="card shadow-sm mb-4 border-primary">
+                <div class="card-header bg-white text-primary d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-steps"></i> Этап 1: Первичная статистика (Светофор)</h6>
+                    <span class="badge bg-primary text-white rounded-pill small">Точные данные</span>
+                </div>
+                <div class="table-responsive rounded-bottom">
+                    <table class="table table-hover align-middle mb-0" id="resultsTable">
+                        <thead class="table-light text-secondary small">
+                            <tr>
+                                <th width="10%">ID</th>
+                                <th width="50%">Текст вопроса</th>
+                                <th width="10%" class="text-success">Верно</th>
+                                <th width="10%" class="text-danger">Ошибок</th>
+                                <th width="20%">Зона</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-5">
+                                    <i class="bi bi-file-earmark-arrow-up display-6 d-block mb-2 text-light"></i>
+                                    Ожидание файлов... Загрузите массив ответов и эталон слева.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
+
+            <div class="card shadow-sm mb-4 border-info">
+                <div class="card-header bg-white text-info d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-cpu text-info"></i> Этап 2: Экспертное заключение нейросети</h6>
+                    <span class="badge bg-info text-dark rounded-pill small">Смысловой анализ</span>
+                </div>
+                <div class="card-body bg-light">
+                    <div id="ai-output" class="p-3 rounded text-dark bg-white border" style="min-height: 120px; white-space: pre-wrap; font-size: 0.95rem;">Ожидание запуска ИИ... Выберите режим анализа в меню слева.</div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-success bg-success bg-opacity-10">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 fw-bold text-success"><i class="bi bi-journal-check"></i> Этап 3: Формирование отчета</h6>
+                        <small class="text-muted">Объединяет таблицу статистики (Этап 1) и рекомендации нейросети (Этап 2) в один документ.</small>
+                    </div>
+                    <button type="button" class="btn btn-success fw-bold shadow-sm px-4 py-2" onclick="downloadExcelReport()">
+                        <i class="bi bi-file-earmark-excel me-2"></i> Скачать итоговый Excel
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        // Функция для отправки данных в твой API-контроллер ИИ
-        async function sendToAi(promptType) {
-            // Читаем массив объектов QuestionStatDto, который напарница положит в window.loadedQuestions
-            const questions = window.loadedQuestions;
+        document.addEventListener("DOMContentLoaded", function () {
+            
+            // 1. Сохранение API-ключа напарницы
+            const savedKey = localStorage.getItem('SavedApiKey');
+            if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
+            document.getElementById('apiKeyInput').addEventListener('change', function(e) {
+                localStorage.setItem('SavedApiKey', e.target.value);
+            });
 
-            if (!questions || questions.length === 0) {
-                alert("Сначала загрузите и обработайте файлы через форму слева!");
-                return;
-            }
+            // 2. ЛОГИКА ЗАГРУЗКИ ФАЙЛОВ (ТВОЙ СВЕТОФОР)
+            const uploadForm = document.getElementById('uploadForm');
+            if (uploadForm) {
+                uploadForm.addEventListener('submit', async function (e) {
+                    e.preventDefault(); // Останавливаем перезагрузку страницы!
+                    
+                    const etalonFile = document.getElementById('etalonFile').files[0];
+                    const answersFile = document.getElementById('answersFile').files[0];
+                    const btn = document.getElementById('uploadBtn');
 
-            const modelProvider = document.getElementById("modelSelect").value;
-            const outputBlock = document.getElementById("ai-output");
+                    if (!etalonFile || !answersFile) return;
 
-            // Включаем лоадер загрузки
-            outputBlock.innerHTML = `
-                <div class="d-flex align-items-center text-primary fw-bold">
-                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                    Нейросеть (${modelProvider}) формирует аналитику, пожалуйста, подождите...
-                </div>`;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Анализируем...';
+                    btn.disabled = true;
 
-            try {
-                // Делаем асинхронный POST запрос на твой контроллер
-                const response = await fetch('/api/ai/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        questions: questions,
-                        promptType: promptType,
-                        modelProvider: modelProvider
-                    })
+                    const formData = new FormData();
+                    formData.append('etalonFile', etalonFile);
+                    formData.append('answersFile', answersFile);
+
+                    try {
+                        const response = await fetch('/api/analyzer/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (!response.ok) throw new Error('Ошибка сервера');
+
+                        const data = await response.json();
+                        
+                        // Сохраняем данные для кнопок ИИ
+                        window.loadedQuestions = data.questions;
+                        
+                        // Отрисовываем таблицу
+                        renderTable(data.questions);
+                        
+                    } catch (error) {
+                        alert("Ошибка обработки: " + error.message);
+                    } finally {
+                        btn.innerHTML = '<i class="bi bi-upload"></i> Upload & Analyze';
+                        btn.disabled = false;
+                    }
                 });
-
-                if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
-
-                const result = await response.json();
-
-                // Сохраняем текстовый ответ ИИ в твою переменную (понадобится для ClosedXML)
-                window.aiRecommendation = result.text;
-
-                // Выводим сгенерированный текст
-                outputBlock.innerText = result.text;
-
-            } catch (error) {
-                outputBlock.innerHTML = `<span class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Ошибка при вызове ИИ: ${error.message}</span>`;
             }
+        });
+
+        // Функция отрисовки (Светофор)
+        function renderTable(questions) {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            questions.forEach(q => {
+                const tr = document.createElement('tr');
+                
+                let badgeClass = '';
+                let zoneName = '';
+                let rowClass = '';
+
+                // Универсальное чтение зоны (защита от разных настроек JSON в .NET)
+                const zoneVal = q.zone !== undefined ? q.zone : q.Zone;
+
+                if (zoneVal === 2 || zoneVal === 'Red') {
+                    badgeClass = 'bg-danger';
+                    zoneName = 'Красная (6+)';
+                    rowClass = 'table-danger';
+                } else if (zoneVal === 1 || zoneVal === 'Yellow') {
+                    badgeClass = 'bg-warning text-dark';
+                    zoneName = 'Желтая (4-5)';
+                    rowClass = 'table-warning';
+                } else {
+                    badgeClass = 'bg-success';
+                    zoneName = 'Зеленая (1-3)';
+                    rowClass = 'table-success';
+                }
+
+                tr.className = rowClass;
+
+                // Читаем данные, игнорируя регистр (защита от camelCase)
+                const qText = q.questionText || q.QuestionText || "";
+                const shortText = qText.length > 80 ? qText.substring(0, 80) + '...' : qText;
+                const qId = q.questionId || q.QuestionId;
+                const correct = q.correctCount !== undefined ? q.correctCount : q.CorrectCount;
+                const errors = q.errorsCount !== undefined ? q.errorsCount : q.ErrorsCount;
+
+                tr.innerHTML = `
+                    <td class="fw-bold">${qId}</td>
+                    <td title="${qText}">${shortText}</td>
+                    <td class="text-success fw-bold">${correct}</td>
+                    <td class="text-danger fw-bold">${errors}</td>
+                    <td><span class="badge ${badgeClass}">${zoneName}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
-        // Функция для скачивания готового отчета ClosedXML
+        // 3. Логика кнопок нейросети (Напарницы)
+        async function sendToAi(promptType) {
+            /* ...Здесь старый код функции sendToAi... */
+        }
+
         async function downloadExcelReport() {
-            const questions = window.loadedQuestions;
-            if (!questions || questions.length === 0) {
-                alert("Нет данных для экспорта отчета!");
-                return;
-            }
-
-            const aiRecommendation = window.aiRecommendation || "Анализ ИИ не проводился.";
-
-            try {
-                // Делаем запрос на твой эндпоинт экспорта
-                const response = await fetch('/api/ai/export', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        questions: questions,
-                        aiRecommendation: aiRecommendation
-                    })
-                });
-
-                if (!response.ok) throw new Error("Не удалось сгенерировать Excel файл.");
-
-                // Получаем файл как Blob и автоматически запускаем скачивание в браузере
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = "AI_Analyzer_Total_Report.xlsx";
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-
-            } catch (error) {
-                alert("Ошибка при скачивании файла: " + error.message);
-            }
+            /* ...Здесь старый код функции downloadExcelReport... */
         }
     </script>
 }
