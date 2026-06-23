@@ -5,7 +5,7 @@ namespace AIAnalyzer.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AnalyzerController : Controller
+    public class AnalyzerController : ControllerBase
     {
         private readonly ITestAnalysisService _analysisService;
 
@@ -15,7 +15,7 @@ namespace AIAnalyzer.Controllers
         }
 
         [HttpPost("upload")]
-        public IActionResult UploadFiles(IFormFile etalonFile, IFormFile answersFile)
+        public async Task<IActionResult> UploadFiles(IFormFile etalonFile, IFormFile answersFile)
         {
             if (etalonFile == null || answersFile == null)
                 return BadRequest("Необходимо загрузить оба файла (Эталон и Ответы).");
@@ -30,7 +30,7 @@ namespace AIAnalyzer.Controllers
             }
             catch (System.Exception ex)
             {
-                return StatusCode(500, $"Ошибка обработки: {ex.Message}");
+                return StatusCode(500, $"Ошибка при обработке файлов: {ex.Message}");
             }
         }
     }

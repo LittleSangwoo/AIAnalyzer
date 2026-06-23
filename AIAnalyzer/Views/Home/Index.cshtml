@@ -1,94 +1,69 @@
-﻿<div class="container-fluid mt-4">
+﻿@{
+    ViewData["Title"] = "AI Агент - Анализ тестов";
+}
+
+<div class="container-fluid mt-4">
     <div class="row">
         <div class="col-md-3">
-            <div class="card bg-dark text-white mb-3">
-                <div class="card-header bg-primary">Загрузите Excel/CSV-файлы</div>
-                <div class="card-body">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white fw-bold">
+                    Загрузите Excel/CSV-файлы
+                </div>
+                <div class="card-body bg-light">
                     <form id="uploadForm">
                         <div class="mb-3">
-                            <label class="form-label small">Эталон ответов:</label>
-                            <input class="form-control form-control-sm" type="file" id="etalonFile" accept=".csv, .xlsx" required>
+                            <label class="form-label small fw-bold">Эталон ответов:</label>
+                            <input class="form-control form-control-sm" type="file" id="etalonFile" accept=".csv,.xlsx" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small">Массив ответов:</label>
-                            <input class="form-control form-control-sm" type="file" id="answersFile" accept=".csv, .xlsx" required>
+                            <label class="form-label small fw-bold">Массив ответов:</label>
+                            <input class="form-control form-control-sm" type="file" id="answersFile" accept=".csv,.xlsx" required>
                         </div>
-                        <button type="submit" class="btn btn-outline-light w-100" id="uploadBtn">
-                            <i class="bi bi-upload"></i> Upload
+                        <button type="submit" class="btn btn-primary w-100" id="uploadBtn">
+                            Upload & Analyze
                         </button>
                     </form>
-                    <div id="uploadStatus" class="alert alert-info mt-3 d-none p-2 text-center small">Ожидание файлов...</div>
+                    <div id="uploadStatus" class="alert mt-3 d-none p-2 text-center small"></div>
+                </div>
+            </div>
+            
+            <div id="aiSettingsBlock">
+                <div class="card shadow-sm border-info mb-3">
+                    <div class="card-header bg-info text-dark fw-bold">Промпты (AI)</div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-2">Функционал в разработке (Шаг 2)...</p>
+                        <button class="btn btn-outline-dark btn-sm w-100 mb-2">Compare</button>
+                        <button class="btn btn-outline-danger btn-sm w-100 mb-2">Critical</button>
+                        <button class="btn btn-outline-success btn-sm w-100">Report</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-6">
-            <h5 class="bg-primary text-white p-2">Первичная аналитика (Светофор)</h5>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle" id="resultsTable">
-                    <thead class="table-dark">
+        <div class="col-md-9">
+            <h5 class="mb-3">Результаты анализа (Светофор)</h5>
+            <div class="table-responsive shadow-sm rounded">
+                <table class="table table-hover align-middle mb-0" id="resultsTable">
+                    <thead class="table-light">
                         <tr>
-                            <th>Вопрос</th>
-                            <th>Правильно</th>
-                            <th>Ошибок</th>
-                            <th>Зона</th>
+                            <th width="10%">ID</th>
+                            <th width="50%">Текст вопроса</th>
+                            <th width="10%" class="text-success">Верно</th>
+                            <th width="10%" class="text-danger">Ошибок</th>
+                            <th width="20%">Зона</th>
                         </tr>
                     </thead>
                     <tbody id="resultsBody">
                         <tr>
-                            <td colspan="4" class="text-center text-muted">Сначала загрузите файлы.</td>
+                            <td colspan="5" class="text-center text-muted py-5">
+                                Ожидание файлов... Загрузите массив ответов и эталон.
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
-
-        <div class="col-md-3">
-            <div class="card bg-dark text-white mb-3">
-                <div class="card-header bg-success">Управление анализом ИИ</div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="modelSelect" class="form-label small">Выберите нейросеть:</label>
-                        <select class="form-select form-select-sm bg-secondary text-white border-0" id="modelSelect">
-                            <option value="deepseek" selected>DeepSeek Chat</option>
-                            <option value="gigachat">Сбер GigaChat</option>
-                        </select>
-                    </div>
-
-                    <label class="form-label small d-block">Режим анализа:</label>
-                    <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-primary btn-sm text-start" onclick="sendToAi('compare')">
-                            <i class="bi bi-bezier2"></i> Compare (Сравнить)
-                        </button>
-                        <button type="button" class="btn btn-warning btn-sm text-start text-dark" onclick="sendToAi('critical')">
-                            <i class="bi bi-exclamation-triangle"></i> Critical Analysis
-                        </button>
-                        <button type="button" class="btn btn-success btn-sm text-start" onclick="sendToAi('report')">
-                            <i class="bi bi-file-earmark-text"></i> Generate Report
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
-
-    <div class="row mt-3">
-        <div class="col-md-3"></div> <div class="col-md-9">
-        <div class="card shadow-sm">
-            <div class="card-header bg-secondary text-white d-flex justify-content-between align-middle py-2">
-                <span class="fw-bold align-self-center"><i class="bi bi-cpu"></i> Результаты анализа нейросети</span>
-                <button type="button" class="btn btn-light btn-sm fw-bold border" onclick="downloadExcelReport()">
-                    <i class="bi bi-file-earmark-excel text-success"></i> Скачать Excel-отчет
-                </button>
-            </div>
-            <div class="card-body bg-light">
-                <div id="ai-output" class="p-2 rounded text-dark" style="min-height: 120px; white-space: pre-wrap; font-size: 0.95rem;">
-                    Ожидание запуска анализа... Здесь отобразится аналитическое заключение выбранной модели.
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 </div>
 
 @section Scripts {

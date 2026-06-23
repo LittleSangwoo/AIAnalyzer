@@ -1,9 +1,10 @@
-﻿using AIAnalyzer.Models.Enums;
-using AIAnalyzer.Models.DTOs;
+﻿using AIAnalyzer.Models.DTOs;
+using AIAnalyzer.Models.Enums;
 using AIAnalyzer.ViewModels;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
+using System.Text;
 
 
 namespace AIAnalyzer.Services
@@ -15,47 +16,63 @@ namespace AIAnalyzer.Services
         {
             var result = new AnalysisResultViewModel();
 
-            // 1. Читаем эталон (упрощенно: первая строка - заголовки/номера, вторая - правильные ответы)
+            // 1. Читаем эталон
             using var etalonReader = new StreamReader(etalonStream);
-            var headers = etalonReader.ReadLine()?.Split(',');
-            var correctAnswers = etalonReader.ReadLine()?.Split(',');
+            var headers = ParseCsvLine(etalonReader.ReadLine());
+            var correctAnswers = ParseCsvLine(etalonReader.ReadLine());
 
-            // 2. Читаем ответы пользователей
+            // Если во второй строке эталона служебное слово (например, "Правильный ответ"), читаем следующую
+            if (correctAnswers != null && correctAnswers.Length > 0 && correctAnswers[0].Contains("Правильный"))
+            {
+                correctAnswers = ParseCsvLine(etalonReader.ReadLine());
+            }
+
+            if (headers == null || correctAnswers == null) return result;
+
+            // 2. Читаем ответы студентов
             using var answersReader = new StreamReader(answersStream);
-            var userAnswersHeaders = answersReader.ReadLine(); // Пропускаем заголовки
+            answersReader.ReadLine(); // Пропускаем строку заголовков
 
             var questionStats = new Dictionary<int, QuestionStatDto>();
-            // Инициализируем статистику (начинаем с колонок, где идут ответы, допустим индекс 4)
+
+            // В выгрузках ответы обычно начинаются с 4-й колонки (индекс 4)
             int answerStartIndex = 4;
             for (int i = answerStartIndex; i < headers.Length; i++)
             {
                 questionStats[i] = new QuestionStatDto
                 {
-                    QuestionId = headers[i],
-                    QuestionText = headers[i], // Сюда можно подтягивать полный текст, если он есть
+                    QuestionId = $"Q{i - answerStartIndex + 1}",
+                    QuestionText = headers[i].Replace("\"", "").Trim(),
                     ErrorsCount = 0,
                     CorrectCount = 0
                 };
             }
 
-            string line;
+            string? line;
             while ((line = answersReader.ReadLine()) != null)
             {
-                var columns = line.Split(',');
+                var columns = ParseCsvLine(line);
                 if (columns.Length < answerStartIndex) continue;
 
-                var score = columns[2]; // Допустим, баллы в 3-й колонке (индекс 2)
+                // Индекс 3 - это колонка "Баллы" (например: "15 / 15 (100%)")
+                var score = columns[3];
 
-                // Отбрасываем нулевые попытки
+                // Исключаем нулевые результаты (отбрасываем тех, кто ничего не решил)
                 if (string.IsNullOrWhiteSpace(score) || score.Trim().StartsWith("0/"))
                     continue;
 
                 result.TotalStudentsAnalyzed++;
 
-                // Сверяем с эталоном
+                // Сверяем ответы с эталоном
                 for (int i = answerStartIndex; i < columns.Length && i < correctAnswers.Length; i++)
                 {
-                    if (columns[i].Trim() == correctAnswers[i].Trim())
+                    if (!questionStats.ContainsKey(i)) continue;
+
+                    var studentAnswer = columns[i].Trim();
+                    var correctAnswer = correctAnswers[i].Trim();
+
+                    // Строгое сравнение (в ТЗ сказано: СДО чувствительна к опечаткам)
+                    if (studentAnswer == correctAnswer)
                     {
                         questionStats[i].CorrectCount++;
                     }
@@ -66,23 +83,52 @@ namespace AIAnalyzer.Services
                 }
             }
 
-            // 3. Распределяем по зонам "Светофора"
+            // 3. Алгоритм "Светофора"
             foreach (var stat in questionStats.Values)
             {
                 stat.Zone = stat.ErrorsCount switch
                 {
                     >= 6 => ErrorZone.Red,
                     >= 4 => ErrorZone.Yellow,
-                    > 0 => ErrorZone.Green,
                     _ => ErrorZone.Green
                 };
                 result.Questions.Add(stat);
             }
 
-            // Сортируем: сначала проблемные (красные)
+            // Отсортировать: Красные вопросы в самом верху списка
             result.Questions = result.Questions.OrderByDescending(q => (int)q.Zone).ToList();
 
             return result;
+        }
+
+        // Вспомогательный метод для правильного парсинга CSV (игнорирует запятые внутри кавычек)
+        private string[] ParseCsvLine(string? line)
+        {
+            if (string.IsNullOrEmpty(line)) return Array.Empty<string>();
+
+            var result = new List<string>();
+            bool inQuotes = false;
+            var currentBuilder = new StringBuilder();
+
+            for (int i = 0; i < line.Length; i++)
+            {
+                char c = line[i];
+                if (c == '\"')
+                {
+                    inQuotes = !inQuotes; // Переключаем флаг кавычек
+                }
+                else if (c == ',' && !inQuotes)
+                {
+                    result.Add(currentBuilder.ToString());
+                    currentBuilder.Clear();
+                }
+                else
+                {
+                    currentBuilder.Append(c);
+                }
+            }
+            result.Add(currentBuilder.ToString());
+            return result.ToArray();
         }
     }
 }
