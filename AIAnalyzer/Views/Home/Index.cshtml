@@ -42,5 +42,141 @@
                 </table>
             </div>
         </div>
+
+        <div class="col-md-3">
+            <div class="card bg-dark text-white mb-3">
+                <div class="card-header bg-success">Управление анализом ИИ</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="modelSelect" class="form-label small">Выберите нейросеть:</label>
+                        <select class="form-select form-select-sm bg-secondary text-white border-0" id="modelSelect">
+                            <option value="deepseek" selected>DeepSeek Chat</option>
+                            <option value="gigachat">Сбер GigaChat</option>
+                        </select>
+                    </div>
+
+                    <label class="form-label small d-block">Режим анализа:</label>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary btn-sm text-start" onclick="sendToAi('compare')">
+                            <i class="bi bi-bezier2"></i> Compare (Сравнить)
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm text-start text-dark" onclick="sendToAi('critical')">
+                            <i class="bi bi-exclamation-triangle"></i> Critical Analysis
+                        </button>
+                        <button type="button" class="btn btn-success btn-sm text-start" onclick="sendToAi('report')">
+                            <i class="bi bi-file-earmark-text"></i> Generate Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-3"></div> <div class="col-md-9">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-middle py-2">
+                <span class="fw-bold align-self-center"><i class="bi bi-cpu"></i> Результаты анализа нейросети</span>
+                <button type="button" class="btn btn-light btn-sm fw-bold border" onclick="downloadExcelReport()">
+                    <i class="bi bi-file-earmark-excel text-success"></i> Скачать Excel-отчет
+                </button>
+            </div>
+            <div class="card-body bg-light">
+                <div id="ai-output" class="p-2 rounded text-dark" style="min-height: 120px; white-space: pre-wrap; font-size: 0.95rem;">
+                    Ожидание запуска анализа... Здесь отобразится аналитическое заключение выбранной модели.
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Функция для отправки данных в твой API-контроллер ИИ
+        async function sendToAi(promptType) {
+            // Читаем массив объектов QuestionStatDto, который напарница положит в window.loadedQuestions
+            const questions = window.loadedQuestions;
+
+            if (!questions || questions.length === 0) {
+                alert("Сначала загрузите и обработайте файлы через форму слева!");
+                return;
+            }
+
+            const modelProvider = document.getElementById("modelSelect").value;
+            const outputBlock = document.getElementById("ai-output");
+
+            // Включаем лоадер загрузки
+            outputBlock.innerHTML = `
+                <div class="d-flex align-items-center text-primary fw-bold">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Нейросеть (${modelProvider}) формирует аналитику, пожалуйста, подождите...
+                </div>`;
+
+            try {
+                // Делаем асинхронный POST запрос на твой контроллер
+                const response = await fetch('/api/ai/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        questions: questions,
+                        promptType: promptType,
+                        modelProvider: modelProvider
+                    })
+                });
+
+                if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
+
+                const result = await response.json();
+
+                // Сохраняем текстовый ответ ИИ в твою переменную (понадобится для ClosedXML)
+                window.aiRecommendation = result.text;
+
+                // Выводим сгенерированный текст
+                outputBlock.innerText = result.text;
+
+            } catch (error) {
+                outputBlock.innerHTML = `<span class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Ошибка при вызове ИИ: ${error.message}</span>`;
+            }
+        }
+
+        // Функция для скачивания готового отчета ClosedXML
+        async function downloadExcelReport() {
+            const questions = window.loadedQuestions;
+            if (!questions || questions.length === 0) {
+                alert("Нет данных для экспорта отчета!");
+                return;
+            }
+
+            const aiRecommendation = window.aiRecommendation || "Анализ ИИ не проводился.";
+
+            try {
+                // Делаем запрос на твой эндпоинт экспорта
+                const response = await fetch('/api/ai/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        questions: questions,
+                        aiRecommendation: aiRecommendation
+                    })
+                });
+
+                if (!response.ok) throw new Error("Не удалось сгенерировать Excel файл.");
+
+                // Получаем файл как Blob и автоматически запускаем скачивание в браузере
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "AI_Analyzer_Total_Report.xlsx";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+            } catch (error) {
+                alert("Ошибка при скачивании файла: " + error.message);
+            }
+        }
+    </script>
+}
