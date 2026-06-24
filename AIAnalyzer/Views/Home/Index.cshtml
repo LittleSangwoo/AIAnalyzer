@@ -220,7 +220,7 @@
             XLSX.writeFile(workbook, `Статистика_курса_${new Date().toLocaleDateString('ru-RU')}.xlsx`);
         }
 
-        async function sendToAi(promptType) {
+                async function sendToAi(promptType) {
             if (!window.loadedQuestions) {
                 alert("Сначала загрузите матрицу данных.");
                 return;
@@ -231,18 +231,16 @@
                 alert("Для работы ассистента требуется API-ключ.");
                 return;
             }
-            
+    
             const aiOutput = document.getElementById('ai-output');
-            
+    
             // 1. Собираем галочки
             const checkedIds = Array.from(document.querySelectorAll('.question-cb:checked')).map(cb => cb.value);
             let targetQuestions = [];
 
             if (checkedIds.length > 0) {
-                // Если есть выбранные, берем только их
                 targetQuestions = window.loadedQuestions.filter(q => checkedIds.includes(q.questionId || q.QuestionId));
             } else {
-                // Если галочек нет, берем всю красную зону по умолчанию
                 targetQuestions = window.loadedQuestions.filter(q => {
                      const z = q.zone !== undefined ? q.zone : q.Zone;
                      return z === 2 || String(z).toLowerCase() === 'red';
@@ -253,8 +251,8 @@
                     return;
                 }
             }
-            
-            // Красивая анимация загрузки
+    
+            // Включаем красивую пульсирующую анимацию
             aiOutput.innerHTML = `
                 <div class="d-flex align-items-center mb-3">
                     <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
@@ -262,23 +260,30 @@
                 </div>
                 <div class="opacity-50 small">Обрабатывается вопросов: ${targetQuestions.length}</div>
             `;
-            
+    
             try {
-                const response = await fetch('/api/ai/recommendation', {
+                // Запускаем параллельно сетевой запрос и таймер на 900 миллисекунд (UX-задержка для плавности анимации)
+                const fetchPromise = fetch('/api/ai/recommendation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        redZoneQuestions: targetQuestions, // Отправляем отфильтрованный массив
+                        redZoneQuestions: targetQuestions,
                         promptType: promptType,
                         modelProvider: document.getElementById('modelSelect').value,
                         apiKey: apiKey
                     })
                 });
-                
+
+                const timerPromise = new Promise(resolve => setTimeout(resolve, 900));
+
+                // Ждем выполнения обоих условий (и запрос завершился, и анимация покрутилась минимум 0.9 сек)
+                const [response] = await Promise.all([fetchPromise, timerPromise]);
+        
                 if (!response.ok) throw new Error(await response.text());
 
                 const resultText = await response.text();
-                // Вставляем ответ с иконкой для красоты
+        
+                // Плавно выводим результат
                 aiOutput.innerHTML = `<i class="bi bi-stars text-primary fs-5 mb-2 d-block"></i>${resultText}`;
             } catch (error) {
                 aiOutput.innerHTML = `<div class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
