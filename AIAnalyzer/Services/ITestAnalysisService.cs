@@ -1,9 +1,12 @@
 ﻿using AIAnalyzer.ViewModels;
+using System.Collections.Generic;
+using System.IO;
 
 namespace AIAnalyzer.Services
 {
     public interface ITestAnalysisService
     {
-        AnalysisResultViewModel Analyze(Stream etalonStream, string etalonFileName, Stream answersStream, string answersFileName);
+        // Убрали etalonStream и etalonFileName, оставили только список файлов с ответами
+        AnalysisResultViewModel Analyze(List<(Stream stream, string fileName)> answersData);
     }
 }

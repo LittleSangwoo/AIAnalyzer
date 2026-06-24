@@ -12,92 +12,133 @@ namespace AIAnalyzer.Services
 {
     public class TestAnalysisService : ITestAnalysisService
     {
-        public AnalysisResultViewModel Analyze(Stream etalonStream, string etalonFileName, Stream answersStream, string answersFileName)
+        public AnalysisResultViewModel Analyze(List<(Stream stream, string fileName)> answersData)
         {
             var result = new AnalysisResultViewModel();
+            result.TotalFilesAnalyzed = answersData.Count;
 
-            // 1. Читаем Эталон
-            var etalonRows = ReadRows(etalonStream, etalonFileName).ToList();
-            if (etalonRows.Count < 2) return result;
+            // Словарь для хранения статистики по вопросам. Ключ — текст вопроса, чтобы объединять 
+            // одинаковые вопросы из разных файлов.
+            var questionStats = new Dictionary<string, QuestionStatDto>();
 
-            var etalonHeaders = etalonRows[0];
-            var correctAnswers = etalonRows[1];
+            int metadataOffset = 4; // Первые 4 колонки — Пользователь, Дата, Статус, Баллы
+            int columnStride = 4;   // Шаг: Тип вопроса, Хэш, Ответ студента, Правильный ответ
 
-            // Пропускаем служебную строку "Правильный ответ", если она есть
-            if (correctAnswers.Length > 0 && correctAnswers[0].Contains("Правильный"))
+            // HashSet для подсчета уникальных попыток студентов (ID + Дата)
+            var processedStudents = new HashSet<string>();
+
+            foreach (var file in answersData)
             {
-                correctAnswers = etalonRows.Count > 2 ? etalonRows[2] : Array.Empty<string>();
-            }
+                var rows = ReadRows(file.stream, file.fileName).ToList();
+                if (rows.Count < 2) continue; // Пропускаем пустые файлы или файлы только с заголовком
 
-            if (etalonHeaders.Length == 0 || correctAnswers.Length == 0) return result;
+                var headers = rows[0];
 
-            // Инициализируем статистику
-            var questionStats = new Dictionary<int, QuestionStatDto>();
-            for (int i = 0; i < etalonHeaders.Length; i++)
-            {
-                var qText = etalonHeaders[i].Replace("\"", "").Trim();
-                if (string.IsNullOrWhiteSpace(qText)) continue;
+                // Карта вопросов для текущего файла (Индекс колонки -> Текст вопроса)
+                var currentFileQuestions = new Dictionary<int, string>();
 
-                questionStats[i] = new QuestionStatDto
+                for (int i = metadataOffset; i < headers.Length; i += columnStride)
                 {
-                    QuestionId = $"Q{i + 1}",
-                    QuestionText = qText,
-                    ErrorsCount = 0,
-                    CorrectCount = 0
-                };
-            }
-
-            // 2. Читаем Массив ответов (пропускаем первую строку с заголовками)
-            var answersRows = ReadRows(answersStream, answersFileName).Skip(1);
-
-            int studentAnswerOffset = 4; // Индекс первого ответа студента
-            int columnStride = 4;        // Шаг между вопросами
-
-            foreach (var columns in answersRows)
-            {
-                if (columns.Length <= studentAnswerOffset) continue;
-
-                var score = columns[3]; // Баллы
-
-                // Игнорируем нулевые попытки
-                if (string.IsNullOrWhiteSpace(score) || score.Trim().StartsWith("0/") || score.Trim() == "0")
-                    continue;
-
-                result.TotalStudentsAnalyzed++;
-
-                // Сверяем ответы с учетом шага колонок
-                for (int etalonIndex = 0; etalonIndex < etalonHeaders.Length; etalonIndex++)
-                {
-                    int studentColIndex = studentAnswerOffset + (etalonIndex * columnStride);
-                    if (studentColIndex >= columns.Length) break;
-
-                    var studentAnswer = columns[studentColIndex].Replace("\"", "").Trim();
-                    var correctAnswer = etalonIndex < correctAnswers.Length ? correctAnswers[etalonIndex].Replace("\"", "").Trim() : "";
-
-                    if (string.Equals(studentAnswer, correctAnswer, StringComparison.OrdinalIgnoreCase))
+                    var qText = headers[i].Replace("\"", "").Trim();
+                    if (!string.IsNullOrWhiteSpace(qText))
                     {
-                        questionStats[etalonIndex].CorrectCount++;
+                        currentFileQuestions[i] = qText;
+
+                        // Если такой вопрос встречается впервые, добавляем его в общую статистику
+                        if (!questionStats.ContainsKey(qText))
+                        {
+                            questionStats[qText] = new QuestionStatDto
+                            {
+                                QuestionId = $"Q{questionStats.Count + 1}",
+                                QuestionText = qText,
+                                CorrectCount = 0,
+                                ErrorsCount = 0
+                            };
+                        }
                     }
-                    else
+                }
+
+                // Обработка ответов студентов (начинаем со 2-й строки)
+                for (int r = 1; r < rows.Count; r++)
+                {
+                    var row = rows[r];
+                    if (row.Length <= metadataOffset) continue;
+
+                    var userId = row[0].Trim();
+
+                    // Если строка пустая или служебная (например, "Среднее"), пропускаем
+                    if (string.IsNullOrWhiteSpace(userId) || userId.Contains("Среднее")) continue;
+
+                    bool studentHasAnswers = false;
+
+                    foreach (var kvp in currentFileQuestions)
                     {
-                        questionStats[etalonIndex].ErrorsCount++;
+                        int colIndex = kvp.Key;
+                        string qText = kvp.Value;
+
+                        // Защита от выхода за пределы массива
+                        if (colIndex + 3 >= row.Length) continue;
+
+                        string qType = row[colIndex].Trim();
+                        string studentAnswer = row[colIndex + 2].Replace("\"", "").Trim().ToLowerInvariant();
+                        string correctAnswer = row[colIndex + 3].Replace("\"", "").Trim().ToLowerInvariant();
+
+                        // Если пусто, значит вопрос из банка не выпадал этому студенту в этой попытке
+                        if (string.IsNullOrWhiteSpace(qType) && string.IsNullOrWhiteSpace(studentAnswer) && string.IsNullOrWhiteSpace(correctAnswer))
+                            continue;
+
+                        studentHasAnswers = true;
+
+                        // Сравниваем ответ с эталоном из этой же строки
+                        if (studentAnswer == correctAnswer)
+                        {
+                            questionStats[qText].CorrectCount++;
+                        }
+                        else
+                        {
+                            questionStats[qText].ErrorsCount++;
+                        }
+                    }
+
+                    // Если студент ответил хотя бы на один вопрос, засчитываем попытку
+                    if (studentHasAnswers)
+                    {
+                        string attemptId = userId + "_" + (row.Length > 1 ? row[1].Trim() : "");
+                        processedStudents.Add(attemptId);
                     }
                 }
             }
 
-            // 3. Формирование зон
+            result.TotalStudentsAnalyzed = processedStudents.Count;
+            double totalErrorPercentage = 0;
+            int validQuestionsCount = 0;
+
             foreach (var stat in questionStats.Values)
             {
-                stat.Zone = stat.ErrorsCount switch
+                // Защита от деления на ноль, если на вопрос вообще никто не отвечал
+                if (stat.TotalAttempts > 0)
                 {
-                    >= 6 => ErrorZone.Red,
-                    >= 4 => ErrorZone.Yellow,
-                    _ => ErrorZone.Green
-                };
-                result.Questions.Add(stat);
+                    // Распределяем по зонам на основе ПРОЦЕНТА ошибок
+                    stat.Zone = stat.ErrorPercentage switch
+                    {
+                        >= 50 => ErrorZone.Red,
+                        >= 30 => ErrorZone.Yellow,
+                        _ => ErrorZone.Green
+                    };
+
+                    totalErrorPercentage += stat.ErrorPercentage;
+                    validQuestionsCount++;
+                    result.Questions.Add(stat);
+                }
             }
 
-            result.Questions = result.Questions.OrderByDescending(q => (int)q.Zone).ToList();
+            result.AverageErrorPercentage = validQuestionsCount > 0
+                ? Math.Round(totalErrorPercentage / validQuestionsCount, 2)
+                : 0;
+
+            // Сортируем: сначала самые проблемные (где процент ошибок выше)
+            result.Questions = result.Questions.OrderByDescending(q => q.ErrorPercentage).ToList();
+
             return result;
         }
 
@@ -110,7 +151,6 @@ namespace AIAnalyzer.Services
 
             if (extension == ".xlsx" || extension == ".xls")
             {
-                // Необходимая регистрация провайдера для ExcelDataReader
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
                 using var reader = ExcelReaderFactory.CreateReader(stream);
@@ -121,22 +161,20 @@ namespace AIAnalyzer.Services
                     {
                         row[i] = reader.GetValue(i)?.ToString() ?? string.Empty;
                     }
-                    yield return row; // Ленивый возврат строки
+                    yield return row;
                 }
             }
             else
             {
-                // Для CSV используем UTF-8 с BOM (стандарт выгрузок из Google Таблиц / нового Excel)
                 using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
                 string? line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    yield return ParseCsvLine(line); // Ленивый возврат строки
+                    yield return ParseCsvLine(line);
                 }
             }
         }
 
-        // Оставляем твой старый парсер для CSV на случай, если загрузят текстовый файл
         private string[] ParseCsvLine(string? line)
         {
             if (string.IsNullOrEmpty(line)) return Array.Empty<string>();

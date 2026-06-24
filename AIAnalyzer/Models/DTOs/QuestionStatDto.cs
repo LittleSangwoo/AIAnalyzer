@@ -12,5 +12,7 @@ namespace AIAnalyzer.Models.DTOs
 
         // Оставляем поле для напарницы, куда её ИИ-сервис запишет ответ
         public string AiRecommendation { get; set; }
+        public int TotalAttempts => CorrectCount + ErrorsCount;
+        public double ErrorPercentage => TotalAttempts == 0 ? 0 : Math.Round((double)ErrorsCount / TotalAttempts * 100, 2);
     }
 }

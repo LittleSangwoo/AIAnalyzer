@@ -14,22 +14,33 @@ namespace AIAnalyzer.Controllers
             _analysisService = analysisService;
         }
 
+
+
+
+
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadFiles([FromForm] IFormFile etalonFile, [FromForm] IFormFile answersFile)
+        // Убрали IFormFile etalonFile, поменяли answersFile на массив List<IFormFile>
+        public IActionResult UploadFiles([FromForm] List<IFormFile> answersFiles)
         {
-            if (etalonFile == null || answersFile == null)
-                return BadRequest("Необходимо загрузить оба файла (Эталон и Ответы).");
+            if (answersFiles == null || answersFiles.Count == 0)
+                return BadRequest("Необходимо загрузить хотя бы один файл с ответами.");
 
             try
             {
-                using var etalonStream = etalonFile.OpenReadStream();
-                using var answersStream = answersFile.OpenReadStream();
+                var answersData = new List<(Stream stream, string fileName)>();
+                foreach (var file in answersFiles)
+                {
+                    answersData.Add((file.OpenReadStream(), file.FileName));
+                }
 
-                // Передаем и потоки, и имена файлов для определения расширения
-                var result = _analysisService.Analyze(
-                    etalonStream, etalonFile.FileName,
-                    answersStream, answersFile.FileName
-                );
+                // Передаем только ответы
+                var result = _analysisService.Analyze(answersData);
+
+                // Очищаем потоки
+                foreach (var data in answersData)
+                {
+                    data.stream.Dispose();
+                }
 
                 return Ok(result);
             }

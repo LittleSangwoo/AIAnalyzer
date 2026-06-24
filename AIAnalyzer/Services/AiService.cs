@@ -9,14 +9,11 @@ using AIAnalyzer.Models.DTOs;
 
 namespace AIAnalyzer.Services
 {
-    // ИНТЕРФЕЙС (объявлен здесь же, в верху файла)
     public interface IAiService
     {
-        // Теперь здесь честно прописаны 3 параметра, включая modelProvider!
         Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider);
     }
 
-    // РЕАЛИЗАЦИЯ СЕРВИСА
     public class AiService : IAiService
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -28,22 +25,25 @@ namespace AIAnalyzer.Services
             _configuration = configuration;
         }
 
-        // Класс успешно реализует интерфейс, так как параметры (3 штуки) совпадают!
         public async Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Список проблемных вопросов (Красная зона):");
+            sb.AppendLine("Статистика проблемных вопросов (Красная зона — высокий процент ошибок):");
             foreach (var q in redZoneQuestions)
             {
-                sb.AppendLine($"- ID: {q.QuestionId} | Вопрос: \"{q.QuestionText}\" | Ошибок: {q.ErrorsCount}");
+                sb.AppendLine($"- Вопрос: \"{q.QuestionText}\" | Процент ошибок: {q.ErrorPercentage}% ({q.ErrorsCount} из {q.TotalAttempts} попыток)");
             }
 
+            // Умная логика промптов
             string systemPrompt = promptType.ToLower() switch
             {
-                "compare" => "Ты — эксперт-аналитик тестов. Сравни эти вопросы между собой. Найди общую закономерность: почему студенты ошибаются именно в них?",
-                "critical" => "Ты — строгий преподаватель-методист. Проведи критический анализ формулировок этих вопросов на предмет двусмысленности.",
-                "report" => "Ты — AI-ассистент. Составь развернутый структурированный отчет и дай рекомендации для преподавателя по изменению учебного плана.",
-                _ => "Проанализируй ошибки в вопросах и дай краткие рекомендации."
+                "rewrite" => "Ты — эксперт-тестолог. Студенты массово ошибаются в этих вопросах. Предложи 2-3 варианта переформулировки для каждого вопроса, чтобы убрать двусмысленность, но сохранить проверку знаний. Объясни, почему текущая формулировка может быть сложной.",
+
+                "course_redesign" => "Ты — опытный преподаватель-методист. Проанализируй темы вопросов с высоким процентом ошибок. Дай рекомендации: какие темы курса нужно объяснить глубже? Какие дополнительные материалы или упражнения помогут студентам лучше усвоить этот материал?",
+
+                "test_redesign" => "Ты — специалист по оценке знаний. Посмотри на провальные вопросы. Дай рекомендации, как изменить структуру самого теста: стоит ли поменять формат вопросов (например, добавить открытые вопросы), изменить веса баллов или добавить интерактивные подсказки?",
+
+                _ => "Ты — аналитик учебных данных. Проанализируй ошибки и дай рекомендации по улучшению учебного процесса."
             };
 
             return await SendApiRequestAsync(systemPrompt, sb.ToString(), modelProvider.ToLower());
@@ -54,24 +54,13 @@ namespace AIAnalyzer.Services
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd("AIAnalyzerApp/1.0");
 
-            string apiUrl = "";
-            string apiKey = "";
-            string modelName = "";
+            // Получаем настройки из appsettings.json
+            string section = modelProvider == "gigachat" ? "GigaChat" : "DeepSeek";
+            string apiUrl = _configuration[$"AiSettings:{section}:ApiUrl"];
+            string apiKey = _configuration[$"AiSettings:{section}:ApiKey"];
+            string modelName = _configuration[$"AiSettings:{section}:ModelName"] ?? "default-model";
 
-            if (modelProvider == "gigachat")
-            {
-                apiUrl = _configuration["AiSettings:GigaChat:ApiUrl"];
-                apiKey = _configuration["AiSettings:GigaChat:ApiKey"];
-                modelName = _configuration["AiSettings:GigaChat:ModelName"] ?? "GigaChat:latest";
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-            }
-            else
-            {
-                apiUrl = _configuration["AiSettings:DeepSeek:ApiUrl"];
-                apiKey = _configuration["AiSettings:DeepSeek:ApiKey"];
-                modelName = _configuration["AiSettings:DeepSeek:ModelName"] ?? "deepseek-chat";
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-            }
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 
             var requestBody = new
             {
@@ -89,26 +78,17 @@ namespace AIAnalyzer.Services
             try
             {
                 var response = await client.PostAsync(apiUrl, jsonContent);
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorLog = await response.Content.ReadAsStringAsync();
-                    return $"Ошибка {modelProvider} API ({response.StatusCode}): {errorLog}";
-                }
-
                 var responseString = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                    return $"Ошибка {modelProvider}: {responseString}";
+
                 using var doc = JsonDocument.Parse(responseString);
-                var root = doc.RootElement;
-
-                if (root.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
-                {
-                    return choices[0].GetProperty("message").GetProperty("content").GetString() ?? "Нейросеть вернула пустой answer.";
-                }
-
-                return "Не удалось распарсить ответ от ИИ.";
+                return doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
             }
             catch (Exception ex)
             {
-                return $"Ошибка при обращении к {modelProvider}: {ex.Message}";
+                return $"Ошибка связи с {modelProvider}: {ex.Message}";
             }
         }
     }
