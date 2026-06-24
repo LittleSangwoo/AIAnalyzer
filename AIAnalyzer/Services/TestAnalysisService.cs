@@ -17,24 +17,27 @@ namespace AIAnalyzer.Services
             var result = new AnalysisResultViewModel();
             result.TotalFilesAnalyzed = answersData.Count;
 
-            // Словарь для хранения статистики по вопросам. Ключ — текст вопроса, чтобы объединять 
-            // одинаковые вопросы из разных файлов.
             var questionStats = new Dictionary<string, QuestionStatDto>();
 
-            int metadataOffset = 4; // Первые 4 колонки — Пользователь, Дата, Статус, Баллы
-            int columnStride = 4;   // Шаг: Тип вопроса, Хэш, Ответ студента, Правильный ответ
-
-            // HashSet для подсчета уникальных попыток студентов (ID + Дата)
+            int metadataOffset = 4;
+            int columnStride = 4;
             var processedStudents = new HashSet<string>();
+
+            // ШАГ 1: Извлекаем все "таблицы". 
+            // 1 CSV = 1 таблица. 1 многостраничный XLSX = Несколько таблиц.
+            var allTables = new List<List<string[]>>();
 
             foreach (var file in answersData)
             {
-                var rows = ReadRows(file.stream, file.fileName).ToList();
-                if (rows.Count < 2) continue; // Пропускаем пустые файлы или файлы только с заголовком
+                allTables.AddRange(ExtractTables(file.stream, file.fileName));
+            }
+
+            // ШАГ 2: Обрабатываем каждую таблицу (каждый лист) независимо
+            foreach (var rows in allTables)
+            {
+                if (rows.Count < 2) continue; // Пропускаем пустые листы
 
                 var headers = rows[0];
-
-                // Карта вопросов для текущего файла (Индекс колонки -> Текст вопроса)
                 var currentFileQuestions = new Dictionary<int, string>();
 
                 for (int i = metadataOffset; i < headers.Length; i += columnStride)
@@ -44,7 +47,6 @@ namespace AIAnalyzer.Services
                     {
                         currentFileQuestions[i] = qText;
 
-                        // Если такой вопрос встречается впервые, добавляем его в общую статистику
                         if (!questionStats.ContainsKey(qText))
                         {
                             questionStats[qText] = new QuestionStatDto
@@ -58,15 +60,13 @@ namespace AIAnalyzer.Services
                     }
                 }
 
-                // Обработка ответов студентов (начинаем со 2-й строки)
+                // Обработка ответов (начинаем со 2-й строки текущего листа)
                 for (int r = 1; r < rows.Count; r++)
                 {
                     var row = rows[r];
                     if (row.Length <= metadataOffset) continue;
 
                     var userId = row[0].Trim();
-
-                    // Если строка пустая или служебная (например, "Среднее"), пропускаем
                     if (string.IsNullOrWhiteSpace(userId) || userId.Contains("Среднее")) continue;
 
                     bool studentHasAnswers = false;
@@ -76,20 +76,17 @@ namespace AIAnalyzer.Services
                         int colIndex = kvp.Key;
                         string qText = kvp.Value;
 
-                        // Защита от выхода за пределы массива
                         if (colIndex + 3 >= row.Length) continue;
 
                         string qType = row[colIndex].Trim();
                         string studentAnswer = row[colIndex + 2].Replace("\"", "").Trim().ToLowerInvariant();
                         string correctAnswer = row[colIndex + 3].Replace("\"", "").Trim().ToLowerInvariant();
 
-                        // Если пусто, значит вопрос из банка не выпадал этому студенту в этой попытке
                         if (string.IsNullOrWhiteSpace(qType) && string.IsNullOrWhiteSpace(studentAnswer) && string.IsNullOrWhiteSpace(correctAnswer))
                             continue;
 
                         studentHasAnswers = true;
 
-                        // Сравниваем ответ с эталоном из этой же строки
                         if (studentAnswer == correctAnswer)
                         {
                             questionStats[qText].CorrectCount++;
@@ -100,7 +97,6 @@ namespace AIAnalyzer.Services
                         }
                     }
 
-                    // Если студент ответил хотя бы на один вопрос, засчитываем попытку
                     if (studentHasAnswers)
                     {
                         string attemptId = userId + "_" + (row.Length > 1 ? row[1].Trim() : "");
@@ -109,16 +105,15 @@ namespace AIAnalyzer.Services
                 }
             }
 
+            // ОСТАЛЬНАЯ ЧАСТЬ КОДА БЕЗ ИЗМЕНЕНИЙ (Расчет процентов и зон)
             result.TotalStudentsAnalyzed = processedStudents.Count;
             double totalErrorPercentage = 0;
             int validQuestionsCount = 0;
 
             foreach (var stat in questionStats.Values)
             {
-                // Защита от деления на ноль, если на вопрос вообще никто не отвечал
                 if (stat.TotalAttempts > 0)
                 {
-                    // Распределяем по зонам на основе ПРОЦЕНТА ошибок
                     stat.Zone = stat.ErrorPercentage switch
                     {
                         >= 50 => ErrorZone.Red,
@@ -136,41 +131,59 @@ namespace AIAnalyzer.Services
                 ? Math.Round(totalErrorPercentage / validQuestionsCount, 2)
                 : 0;
 
-            // Сортируем: сначала самые проблемные (где процент ошибок выше)
             result.Questions = result.Questions.OrderByDescending(q => q.ErrorPercentage).ToList();
 
             return result;
         }
 
         /// <summary>
-        /// Универсальный метод чтения строк (поддерживает и CSV, и XLSX)
+        /// Извлекает листы из Excel или разбирает CSV в список таблиц.
+        /// Возвращает коллекцию таблиц (где таблица — это список строк массива).
         /// </summary>
-        private IEnumerable<string[]> ReadRows(Stream stream, string fileName)
+        private IEnumerable<List<string[]>> ExtractTables(Stream stream, string fileName)
         {
             string extension = Path.GetExtension(fileName).ToLower();
 
             if (extension == ".xlsx" || extension == ".xls")
             {
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
                 using var reader = ExcelReaderFactory.CreateReader(stream);
-                while (reader.Read())
+
+                // Читаем Excel, пока не закончатся листы (вкладки)
+                do
                 {
-                    var row = new string[reader.FieldCount];
-                    for (int i = 0; i < reader.FieldCount; i++)
+                    var currentSheetRows = new List<string[]>();
+                    while (reader.Read())
                     {
-                        row[i] = reader.GetValue(i)?.ToString() ?? string.Empty;
+                        var row = new string[reader.FieldCount];
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            row[i] = reader.GetValue(i)?.ToString() ?? string.Empty;
+                        }
+                        currentSheetRows.Add(row);
                     }
-                    yield return row;
+
+                    if (currentSheetRows.Count > 0)
+                    {
+                        yield return currentSheetRows; // Возвращаем собранный лист
+                    }
                 }
+                while (reader.NextResult()); // Переходим к следующему листу, если он есть
             }
             else
             {
+                // Для CSV это всегда одна таблица
+                var csvRows = new List<string[]>();
                 using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
                 string? line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    yield return ParseCsvLine(line);
+                    csvRows.Add(ParseCsvLine(line));
+                }
+
+                if (csvRows.Count > 0)
+                {
+                    yield return csvRows;
                 }
             }
         }
