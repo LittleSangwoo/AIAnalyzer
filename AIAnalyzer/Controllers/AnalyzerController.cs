@@ -15,7 +15,7 @@ namespace AIAnalyzer.Controllers
         }
 
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadFiles(IFormFile etalonFile, IFormFile answersFile)
+        public async Task<IActionResult> UploadFiles([FromForm] IFormFile etalonFile, [FromForm] IFormFile answersFile)
         {
             if (etalonFile == null || answersFile == null)
                 return BadRequest("Необходимо загрузить оба файла (Эталон и Ответы).");
@@ -25,7 +25,12 @@ namespace AIAnalyzer.Controllers
                 using var etalonStream = etalonFile.OpenReadStream();
                 using var answersStream = answersFile.OpenReadStream();
 
-                var result = _analysisService.Analyze(etalonStream, answersStream);
+                // Передаем и потоки, и имена файлов для определения расширения
+                var result = _analysisService.Analyze(
+                    etalonStream, etalonFile.FileName,
+                    answersStream, answersFile.FileName
+                );
+
                 return Ok(result);
             }
             catch (System.Exception ex)
