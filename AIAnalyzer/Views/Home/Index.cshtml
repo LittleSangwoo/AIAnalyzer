@@ -5,7 +5,6 @@
 <div class="container-fluid mt-4">
     <div class="row">
         <div class="col-md-3">
-
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-dark text-white fw-bold">
                     <i class="bi bi-file-earmark-excel"></i> Загрузка Excel/CSV
@@ -61,29 +60,37 @@
         </div>
 
         <div class="col-md-9">
+            
             <div class="card shadow-sm mb-4 border-primary">
                 <div class="card-header bg-white text-primary d-flex justify-content-between align-items-center py-3">
                     <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-steps"></i> Этап 1: Первичная статистика</h6>
-                    <span class="badge bg-primary text-white rounded-pill small">Точные данные</span>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary me-2" type="button" id="toggleTableBtn" data-bs-toggle="collapse" data-bs-target="#collapseTable" aria-expanded="true">
+                            <i class="bi bi-arrows-collapse"></i> Свернуть таблицу
+                        </button>
+                        <span class="badge bg-primary text-white rounded-pill small">Точные данные</span>
+                    </div>
                 </div>
-                <div class="table-responsive rounded-bottom">
-                    <table class="table table-hover align-middle mb-0" id="resultsTable">
-                        <thead class="table-light text-secondary small">
-                            <tr>
-                                <th>ID</th>
-                                <th>Текст вопроса</th>
-                                <th>Верно</th>
-                                <th>Ошибок</th>
-                                <th>% Ошибок</th>
-                                <th>Зона</th>
-                            </tr>
-                        </thead>
-                        <tbody id="resultsBody">
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-5">Загрузите файлы ответов слева.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+    
+                <div id="collapseTable" class="collapse show">
+                    <div class="table-responsive rounded-bottom">
+                        <table class="table table-hover align-middle mb-0" id="resultsTable">
+                            <thead class="table-light text-secondary small">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Текст вопроса</th>
+                                    <th>Верно</th>
+                                    <th>Ошибок</th>
+                                    <th>% Ошибок</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsBody">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-5">Загрузите файлы ответов слева.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -95,6 +102,7 @@
                     <div id="ai-output" class="p-3 rounded text-dark bg-white border" style="min-height: 120px; white-space: pre-wrap; font-size: 0.95rem;">Ожидание запуска ИИ...</div>
                 </div>
             </div>
+            
         </div>
     </div>
 </div>
@@ -103,11 +111,24 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const uploadForm = document.getElementById('uploadForm');
+            const collapseTable = document.getElementById('collapseTable');
+            const toggleTableBtn = document.getElementById('toggleTableBtn');
+
+            // Логика изменения текста и иконки кнопки Свернуть/Развернуть
+            collapseTable.addEventListener('hidden.bs.collapse', function () {
+                toggleTableBtn.innerHTML = '<i class="bi bi-arrows-expand"></i> Развернуть таблицу';
+            });
+
+            collapseTable.addEventListener('shown.bs.collapse', function () {
+                toggleTableBtn.innerHTML = '<i class="bi bi-arrows-collapse"></i> Свернуть таблицу';
+            });
 
             uploadForm.addEventListener('submit', async function (e) {
                 e.preventDefault();
                 const files = document.getElementById('answersFiles').files;
                 const btn = document.getElementById('uploadBtn');
+
+
 
                 if (files.length === 0) return;
 
@@ -124,11 +145,16 @@
                         method: 'POST',
                         body: formData
                     });
+                    
                     if (!response.ok) throw new Error('Ошибка обработки файлов');
 
                     const data = await response.json();
-                    window.loadedQuestions = data.questions;
-                    renderTable(data.questions);
+                    
+                    // Защита от разного регистра в сериализаторе JSON
+                    const questionsList = data.questions || data.Questions || [];
+                    window.loadedQuestions = questionsList;
+                    renderTable(questionsList);
+                    
                 } catch (error) {
                     alert("Ошибка: " + error.message);
                 } finally {
@@ -141,38 +167,84 @@
         function renderTable(questions) {
             const tbody = document.getElementById('resultsBody');
             tbody.innerHTML = '';
+            
+            if (!questions || questions.length === 0) {
+                 tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-5">Нет данных для анализа.</td></tr>';
+                 return;
+            }
+
             questions.forEach(q => {
                 const tr = document.createElement('tr');
+                
+                // Страховка регистра (PascalCase / camelCase)
                 const zoneVal = q.zone !== undefined ? q.zone : q.Zone;
-                const rowClass = zoneVal === 2 || zoneVal === 'Red' ? 'table-danger' : (zoneVal === 1 || zoneVal === 'Yellow' ? 'table-warning' : 'table-success');
+                const errs = q.errorsCount !== undefined ? q.errorsCount : q.ErrorsCount;
+                const corrs = q.correctCount !== undefined ? q.correctCount : q.CorrectCount;
+                const qId = q.questionId || q.QuestionId;
+                const qText = q.questionText || q.QuestionText;
+
+                // Считаем процент на лету
+                const total = errs + corrs;
+                const percent = total > 0 ? Math.round((errs / total) * 100) : 0;
+
+                // Настраиваем цвета и текст зоны (с поддержкой числового Enum и строкового значения)
+                let zoneLabel = "Зеленая";
+                let badgeClass = "bg-success";
+                let rowClass = "table-success";
+
+                if (zoneVal === 2 || String(zoneVal).toLowerCase() === 'red') {
+                    zoneLabel = "Красная";
+                    badgeClass = "bg-danger";
+                    rowClass = "table-danger";
+                } else if (zoneVal === 1 || String(zoneVal).toLowerCase() === 'yellow') {
+                    zoneLabel = "Желтая";
+                    badgeClass = "bg-warning text-dark";
+                    rowClass = "table-warning";
+                }
+
                 tr.className = rowClass;
                 tr.innerHTML = `
-                    <td class="fw-bold">${q.questionId || q.QuestionId}</td>
-                    <td>${q.questionText || q.QuestionText}</td>
-                    <td>${q.correctCount || q.CorrectCount}</td>
-                    <td>${q.errorsCount || q.ErrorsCount}</td>
-                    <td>${q.errorPercentage || q.ErrorPercentage}%</td>
-                    <td><span class="badge ${zoneVal === 2 ? 'bg-danger' : 'bg-success'}">${zoneVal}</span></td>
+                    <td class="fw-bold">${qId}</td>
+                    <td>${qText}</td>
+                    <td>${corrs}</td>
+                    <td>${errs}</td>
+                    <td>${percent}%</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
         async function sendToAi(promptType) {
+            if (!window.loadedQuestions) {
+                alert("Сначала загрузите и проанализируйте файлы.");
+                return;
+            }
+            
             const aiOutput = document.getElementById('ai-output');
-            const redZone = window.loadedQuestions.filter(q => q.zone === 2 || q.zone === 'Red');
-            aiOutput.innerText = "Генерация рекомендаций...";
-
-            const response = await fetch('/api/ai/recommendation', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    redZoneQuestions: redZone,
-                    promptType: promptType,
-                    modelProvider: document.getElementById('modelSelect').value
-                })
+            
+            // Поддержка обеих нотаций для Zone
+            const redZone = window.loadedQuestions.filter(q => {
+                 const z = q.zone !== undefined ? q.zone : q.Zone;
+                 return z === 2 || String(z).toLowerCase() === 'red';
             });
-            aiOutput.innerText = await response.text();
+            
+            aiOutput.innerText = "Генерация рекомендаций...";
+            
+            try {
+                const response = await fetch('/api/ai/recommendation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        redZoneQuestions: redZone,
+                        promptType: promptType,
+                        modelProvider: document.getElementById('modelSelect').value
+                    })
+                });
+                
+                aiOutput.innerText = await response.text();
+            } catch (error) {
+                aiOutput.innerText = "Ошибка при обращении к ИИ: " + error.message;
+            }
         }
     </script>
 }
