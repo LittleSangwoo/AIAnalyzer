@@ -2,15 +2,16 @@
 using AIAnalyzer.Models.DTOs;
 using AIAnalyzer.Models.Enums;
 using AIAnalyzer.Services;
+using System.Text.Json;
 
 namespace AIAnalyzer.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")] // Эндпоинты будут доступны по адресу: api/ai
+    [Route("api/[controller]")]
     public class AiController : ControllerBase
     {
         private readonly IAiService _aiService;
-        private readonly IReportService _reportService; // Сервис отчетов через Dependency Injection
+        private readonly IReportService _reportService;
 
         public AiController(IAiService aiService, IReportService reportService)
         {
@@ -18,61 +19,60 @@ namespace AIAnalyzer.Controllers
             _reportService = reportService;
         }
 
-        [HttpPost("analyze")]
-        public async Task<IActionResult> AnalyzeQuestions([FromBody] AnalysisRequest request)
+
+        // --- ОБНОВЛЕННЫЙ метод анализа: принимает список вопросов, пришедший с фронта ---
+        [HttpPost("recommendation")]
+        public async Task<IActionResult> GetRecommendation([FromBody] AiRecommendationRequest request)
         {
-            if (request?.Questions == null || !request.Questions.Any())
+            try
             {
-                return BadRequest("Нет данных для анализа.");
+                string aiResponse = await _aiService.GenerateRecommendationAsync(
+                    request.Questions, request.PromptType, request.ModelProvider);
+                return Ok(aiResponse);
             }
-
-            // Фильтруем только красную зону, как договаривались в плане
-            var redZoneQuestions = request.Questions
-                .Where(q => q.Zone == ErrorZone.Red || q.ErrorsCount >= 6)
-                .ToList();
-
-            if (!redZoneQuestions.Any())
+            catch (InvalidOperationException ex)
             {
-                // Возвращаем JSON-объект с полем text, чтобы фронтенд (JS) не сломался
-                return Ok(new { text = "Красная зона пуста. Анализ ИИ не требуется, все студенты справились отлично!" });
+                return BadRequest(ex.Message); // Вернет 400 Bad Request с текстом ошибки
             }
-
-            // Вызываем ИИ сервис
-            string aiResponse = await _aiService.GenerateRecommendationAsync(redZoneQuestions, request.PromptType, request.ModelProvider);
-
-            return Ok(new { text = aiResponse });
         }
 
-        // Метод экспорта Excel, чтобы кнопка скачивания на фронтенде работала
+        // --- НОВЫЙ метод для произвольных текстовых промптов ---
+        [HttpPost("custom")]
+        public async Task<IActionResult> Custom([FromBody] CustomPromptRequest request)
+        {
+            if (string.IsNullOrEmpty(request?.Prompt))
+            {
+                return BadRequest("Текст промпта пуст.");
+            }
+
+            string aiResponse = await _aiService.ProcessCustomPromptAsync(request.Prompt, request.ModelProvider);
+            return Ok(aiResponse);
+        }
+
         [HttpPost("export")]
         public IActionResult ExportReport([FromBody] ExportRequest request)
         {
-            if (request?.Questions == null)
-            {
-                return BadRequest("Нет данных для формирования отчета.");
-            }
-
-            // Генерируем массив байтов Excel-файла через ClosedXML
+            if (request?.Questions == null) return BadRequest("Нет данных.");
             byte[] fileBytes = _reportService.GenerateExcelReport(request.Questions, request.AiRecommendation);
-
-            // Возвращаем файл пользователю для скачивания в браузере
-            return File(
-                fileBytes,
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "AI_Analyzer_Report.xlsx"
-            );
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "AI_Analyzer_Report.xlsx");
         }
     }
 
-    // Вспомогательный класс для приема запроса на анализ
-    public class AnalysisRequest
+    // DTO для рекомендаций
+    public class AiRecommendationRequest
     {
         public List<QuestionStatDto> Questions { get; set; }
-        public string PromptType { get; set; }     // "compare", "critical", "report"
-        public string ModelProvider { get; set; }  // "deepseek" или "gigachat"
+        public string PromptType { get; set; }
+        public string ModelProvider { get; set; }
     }
 
-    // Вспомогательный класс для приема запроса на экспорт Excel
+    // DTO для кастомных запросов
+    public class CustomPromptRequest
+    {
+        public string Prompt { get; set; }
+        public string ModelProvider { get; set; }
+    }
+
     public class ExportRequest
     {
         public List<QuestionStatDto> Questions { get; set; }

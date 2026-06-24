@@ -1,10 +1,10 @@
-﻿@{
-    ViewData["Title"] = "Аналитика";
+﻿﻿@{
+ViewData["Title"] = "Аналитика";
 }
 
 <div class="container-fluid" style="height: calc(100vh - 120px);">
     <div class="row g-4 h-100">
-        
+
         <div class="col-xl-2 col-lg-3 d-flex flex-column h-100">
             <div class="pro-card flex-grow-1">
                 <div class="pro-card-header">
@@ -42,7 +42,7 @@
                         <i class="bi bi-download me-1"></i> Excel
                     </button>
                 </div>
-                
+
                 <div class="table-responsive scrollable-area flex-grow-1" style="height: 0;">
                     <table class="table table-hover align-middle mb-0 border-0" id="resultsTable">
                         <thead style="background-color: var(--app-surface-hover); position: sticky; top: 0; z-index: 1;">
@@ -74,7 +74,7 @@
             <div class="pro-card flex-grow-1">
                 <div class="pro-card-header border-0 pb-0">
                     <h6 class="mb-3 fw-bold"><i class="bi bi-magic me-2" style="color: var(--app-accent);"></i>Интеллектуальный анализ</h6>
-                    
+
                     <div class="d-flex gap-2 mb-3">
                         <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('rewrite')">
                             <i class="bi bi-pencil-square text-primary mb-1 d-block fs-5"></i>
@@ -90,7 +90,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="card-body p-4 d-flex flex-column">
                     <div id="ai-output" class="ai-assistant-panel scrollable-area">
                         <span class="opacity-50"><i class="bi bi-stars me-2"></i>Готов к работе. Выберите вопросы в таблице слева и нажмите на нужный инструмент. Если вопросы не выбраны, ассистент проанализирует всю «Красную зону».</span>
@@ -133,14 +133,14 @@
                         method: 'POST',
                         body: formData
                     });
-                    
+
                     if (!response.ok) throw new Error('Сбой при парсинге файлов');
 
                     const data = await response.json();
                     const questionsList = data.questions || data.Questions || [];
                     window.loadedQuestions = questionsList;
                     renderTable(questionsList);
-                    
+
                 } catch (error) {
                     alert("Ошибка системы: " + error.message);
                 } finally {
@@ -154,7 +154,7 @@
             const tbody = document.getElementById('resultsBody');
             tbody.innerHTML = '';
             document.getElementById('selectAllCb').checked = false; // Сброс главной галочки
-            
+
             if (!questions || questions.length === 0) {
                  tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-5">Выборка пуста.</td></tr>`;
                  return;
@@ -162,7 +162,7 @@
 
             questions.forEach((q, index) => {
                 const tr = document.createElement('tr');
-                
+
                 const zoneVal = q.zone !== undefined ? q.zone : q.Zone;
                 const errs = q.errorsCount !== undefined ? q.errorsCount : q.ErrorsCount;
                 const corrs = q.correctCount !== undefined ? q.correctCount : q.CorrectCount;
@@ -231,9 +231,9 @@
                 alert("Для работы ассистента требуется API-ключ.");
                 return;
             }
-    
+
             const aiOutput = document.getElementById('ai-output');
-    
+
             // 1. Собираем галочки
             const checkedIds = Array.from(document.querySelectorAll('.question-cb:checked')).map(cb => cb.value);
             let targetQuestions = [];
@@ -251,7 +251,7 @@
                     return;
                 }
             }
-    
+
             // Включаем красивую пульсирующую анимацию
             aiOutput.innerHTML = `
                 <div class="d-flex align-items-center mb-3">
@@ -260,7 +260,7 @@
                 </div>
                 <div class="opacity-50 small">Обрабатывается вопросов: ${targetQuestions.length}</div>
             `;
-    
+
             try {
                 // Запускаем параллельно сетевой запрос и таймер на 900 миллисекунд (UX-задержка для плавности анимации)
                 const fetchPromise = fetch('/api/ai/recommendation', {
@@ -278,11 +278,11 @@
 
                 // Ждем выполнения обоих условий (и запрос завершился, и анимация покрутилась минимум 0.9 сек)
                 const [response] = await Promise.all([fetchPromise, timerPromise]);
-        
+
                 if (!response.ok) throw new Error(await response.text());
 
                 const resultText = await response.text();
-        
+
                 // Плавно выводим результат
                 aiOutput.innerHTML = `<i class="bi bi-stars text-primary fs-5 mb-2 d-block"></i>${resultText}`;
             } catch (error) {
