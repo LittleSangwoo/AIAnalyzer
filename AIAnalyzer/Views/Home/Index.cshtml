@@ -27,6 +27,33 @@
     html[data-bs-theme="light"] .light-theme-border, body[data-theme="light"] .light-theme-border {
         border-color: #ced4da !important;
     }
+
+    /* Стили для ответов ИИ (Markdown), адаптированные под темы */
+    .ai-markdown-content {
+        font-size: 0.95rem;
+        color: inherit;
+    }
+    .ai-markdown-content h1, .ai-markdown-content h2, .ai-markdown-content h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--app-accent, #0d6efd);
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .ai-markdown-content p {
+        margin-bottom: 0.75rem;
+    }
+    .ai-markdown-content ul, .ai-markdown-content ol {
+        padding-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .ai-markdown-content li {
+        margin-bottom: 0.25rem;
+    }
+    .ai-markdown-content strong {
+        font-weight: 600;
+        color: inherit;
+    }
 </style>
 
 <div class="container-fluid" style="height: calc(100vh - 120px);">
@@ -150,7 +177,7 @@
 
                 <div class="card-body p-4 d-flex flex-column flex-grow-1" style="height: 0;">
                     <div id="ai-output" class="ai-assistant-panel scrollable-area flex-grow-1 p-3 shadow-sm light-theme-border" style="background-color: var(--app-surface-hover); border-radius: 12px; border: 1px solid var(--app-border); height: 0; overflow-y: auto;">
-                        <span class="opacity-75"><i class="bi bi-stars me-2 text-primary"></i>Готов к работе. Выберите вопросы в таблице слева и нажмите на нужный инструмент, либо задайте свой вопрос. Если вопросы не выбраны, ассистент проанализирует всю «Красную зону».</span>
+                        <span class="opacity-75"><i class="bi bi-stars me-2 text-primary"></i>Готов к работе. Выберите вопросы в таблице слева и нажмите на нужный инструмент, либо задайте свой вопрос.</span>
                     </div>
                 </div>
             </div>
@@ -212,9 +239,18 @@
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            // Настраиваем Markdown
+            if (typeof marked !== 'undefined') {
+                marked.use({
+                    breaks: true,
+                    gfm: true
+                });
+            }
+
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl)
@@ -287,10 +323,9 @@
             });
         });
 
-        // Функция фильтрации (добавлен поиск по ID)
+        // Функция фильтрации (поиск по ID и тексту)
         function filterResults() {
             const search = document.getElementById('searchInput').value.toLowerCase();
-            
             const showRed = document.getElementById('filterRed').checked;
             const showYellow = document.getElementById('filterYellow').checked;
             const showGreen = document.getElementById('filterGreen').checked;
@@ -299,10 +334,9 @@
 
             rows.forEach(row => {
                 const text = row.getAttribute('data-qtext');
-                const id = row.getAttribute('data-qid'); // Получаем ID
+                const id = row.getAttribute('data-qid');
                 const zone = row.getAttribute('data-qzone');
                 
-                // Проверяем совпадение и по тексту, и по ID
                 const matchText = text.includes(search) || id.includes(search);
                 
                 let matchZone = false;
@@ -357,7 +391,6 @@
                 }
 
                 tr.className = rowClass + ' data-row border-bottom';
-                // Добавлен дата-атрибут data-qid для корректного поиска по номеру
                 tr.setAttribute('data-qtext', qText.toLowerCase());
                 tr.setAttribute('data-qid', String(qId).toLowerCase()); 
                 tr.setAttribute('data-qzone', zoneStr);
@@ -421,8 +454,21 @@
             XLSX.writeFile(workbook, `Статистика_курса_${new Date().toLocaleDateString('ru-RU')}.xlsx`);
         }
 
+        // Вспомогательная функция для парсинга Markdown (из message (1).txt)
+        async function processAiResponse(response, outputElement) {
+            if (!response.ok) throw new Error(await response.text());
+            let rawText = await response.text();
+            let parsedText = rawText;
+
+            try {
+                parsedText = JSON.parse(rawText);
+            } catch(e) { }
+
+            outputElement.innerHTML = `<div class="ai-markdown-content">${marked.parse(parsedText)}</div>`;
+        }
+
         async function sendToAi(promptType) {
-            if (!window.loadedQuestions) {
+            if (!window.loadedQuestions || window.loadedQuestions.length === 0) {
                 alert("Сначала загрузите матрицу данных.");
                 return;
             }
@@ -431,25 +477,35 @@
             const checkedIds = Array.from(document.querySelectorAll('.question-cb:checked')).map(cb => cb.value);
             let targetQuestions = [];
             
-            if (checkedIds.length > 0) {
-                targetQuestions = window.loadedQuestions.filter(q => checkedIds.includes(String(q.questionId || q.QuestionId)));
+            // Логика сортировки и выборки (из message (1).txt)
+            if (promptType === 'course_redesign' || promptType === 'test_redesign') {
+                targetQuestions = [...window.loadedQuestions]
+                    .sort((a, b) => {
+                        const errA = a.errorPercentage !== undefined ? a.errorPercentage : a.ErrorPercentage;
+                        const errB = b.errorPercentage !== undefined ? b.errorPercentage : b.ErrorPercentage;
+                        return errB - errA;
+                    });
             } else {
-                targetQuestions = window.loadedQuestions.filter(q => {
-                     const z = q.zone !== undefined ? q.zone : q.Zone;
-                     return z === 2 || String(z).toLowerCase() === 'red';
-                });
-                if (targetQuestions.length === 0) {
-                    aiOutput.innerHTML = '<div class="text-success fw-bold d-flex align-items-center"><i class="bi bi-check-circle-fill fs-4 me-2"></i> Нет вопросов в красной зоне. Ручной выбор также пуст.</div>';
-                    return;
+                if (checkedIds.length > 0) {
+                    targetQuestions = window.loadedQuestions.filter(q => checkedIds.includes(String(q.questionId || q.QuestionId)));
+                } else {
+                    targetQuestions = window.loadedQuestions.filter(q => {
+                         const z = q.zone !== undefined ? q.zone : q.Zone;
+                         return z === 2 || String(z).toLowerCase() === 'red';
+                    });
                 }
+            }
+
+            if (targetQuestions.length === 0) {
+                aiOutput.innerHTML = '<div class="text-success fw-bold d-flex align-items-center"><i class="bi bi-check-circle-fill fs-4 me-2"></i> Нет вопросов для анализа. Выберите вопросы вручную.</div>';
+                return;
             }
 
             aiOutput.innerHTML = `
                 <div class="d-flex align-items-center mb-3">
                     <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
-                    <span class="fw-semibold text-primary">Ассистент анализирует данные...</span>
+                    <span class="fw-semibold text-primary">ИИ изучает ${targetQuestions.length} вопросов. Это может занять около минуты, пожалуйста, подождите...</span>
                 </div>
-                <div class="opacity-50 small">Обрабатывается вопросов: ${targetQuestions.length}</div>
             `;
             try {
                 const fetchPromise = fetch('/api/ai/recommendation', {
@@ -459,15 +515,11 @@
                         redZoneQuestions: targetQuestions,
                         promptType: promptType,
                         modelProvider: document.getElementById('modelSelect').value,
-                        apiKey: ""
+                        apiKey: "" // Оставляем пустую строку, как в Index.cshtml
                     })
                 });
-                const timerPromise = new Promise(resolve => setTimeout(resolve, 900));
-                const [response] = await Promise.all([fetchPromise, timerPromise]);
-
-                if (!response.ok) throw new Error(await response.text());
-                const resultText = await response.text();
-                aiOutput.innerHTML = `<i class="bi bi-stars text-primary fs-5 mb-2 d-block"></i>${resultText}`;
+                const [response] = await Promise.all([fetchPromise, new Promise(r => setTimeout(r, 900))]);
+                await processAiResponse(response, aiOutput);
             } catch (error) {
                 aiOutput.innerHTML = `<div class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
             }
@@ -491,15 +543,11 @@
                     body: JSON.stringify({
                         prompt: prompt,
                         modelProvider: document.getElementById('modelSelect').value,
-                        apiKey: ""
+                        apiKey: "" // Оставляем пустую строку
                     })
                 });
-                const timerPromise = new Promise(resolve => setTimeout(resolve, 900));
-                const [response] = await Promise.all([fetchPromise, timerPromise]);
-
-                if (!response.ok) throw new Error(await response.text());
-                const resultText = await response.text();
-                aiOutput.innerHTML = `<i class="bi bi-chat-left-text text-primary fs-5 mb-2 d-block"></i>${resultText}`;
+                const [response] = await Promise.all([fetchPromise, new Promise(r => setTimeout(r, 900))]);
+                await processAiResponse(response, aiOutput);
                 
                 document.getElementById('customPrompt').value = '';
             } catch (error) {
