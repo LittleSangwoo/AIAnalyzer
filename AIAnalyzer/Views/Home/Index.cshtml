@@ -13,7 +13,10 @@
                 <div class="card-body p-4 d-flex flex-column">
                     <form id="uploadForm" class="mb-5">
                         <label class="form-label small text-muted fw-semibold mb-2">Файлы ответов</label>
-                        <input class="form-control form-control-sm mb-3" style="background-color: var(--app-surface-hover); border-color: var(--app-border);" type="file" id="answersFiles" accept=".csv,.xlsx" multiple required>
+                        <input class="form-control form-control-sm mb-3" style="background-color: var(--app-surface-hover); border-color: var(--app-border);"
+                               type="file" id="answersFiles" accept=".csv,.xlsx" multiple>
+
+                        <div id="fileListContainer" class="d-flex flex-column gap-2 mb-3"></div>
                         <button type="submit" class="btn btn-gradient-primary w-100 fw-semibold py-2" id="uploadBtn">
                             Загрузить данные
                         </button>
@@ -28,12 +31,15 @@
                         </select>
 
                         <label class="form-label small text-muted fw-semibold">API Ключ</label>
-                        <div class="input-group input-group-sm shadow-sm" style="border-radius: 8px; overflow: hidden; border: 1px solid var(--app-border);">
+                        <div class="input-group input-group-sm shadow-sm mb-3" style="border-radius: 8px; overflow: hidden; border: 1px solid var(--app-border);">
                             <input type="password" class="form-control border-0" id="apiKeyInput" placeholder="Введите токен..." style="background-color: var(--app-surface-hover);">
-                            <button class="btn btn-light border-0" type="button" title="Добавить ключ в систему (в разработке)" style="background-color: var(--app-surface-hover);">
-                                <i class="bi bi-plus-circle text-primary"></i>
+                            <button class="btn btn-light border-0" type="button" title="Сохранить настройки" onclick="saveSettings()" style="background-color: var(--app-surface-hover);">
+                                <i class="bi bi-floppy text-primary"></i>
                             </button>
                         </div>
+
+                        <label class="form-label small text-muted fw-semibold">Название модели (опционально)</label>
+                        <input type="text" class="form-control form-control-sm mb-3" id="modelNameInput" placeholder="Например: llama3-8b-8192" style="background-color: var(--app-surface-hover); border-color: var(--app-border);">
                     </div>
                 </div>
             </div>
@@ -115,28 +121,83 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
+        const savedProvider = localStorage.getItem('ai_provider');
+        if (savedProvider) document.getElementById('modelSelect').value = savedProvider;
+
+        const savedKey = localStorage.getItem('ai_apiKey');
+        if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
+
+        const savedModel = localStorage.getItem('ai_modelName');
+        if (savedModel) document.getElementById('modelNameInput').value = savedModel;
+
         document.addEventListener("DOMContentLoaded", function () {
             const uploadForm = document.getElementById('uploadForm');
 
-            document.getElementById('selectAllCb').addEventListener('change', function(e) {
-                const cbs = document.querySelectorAll('.question-cb');
-                cbs.forEach(cb => cb.checked = e.target.checked);
+        window.saveSettings = function() {
+        localStorage.setItem('ai_provider', document.getElementById('modelSelect').value);
+        localStorage.setItem('ai_apiKey', document.getElementById('apiKeyInput').value);
+        localStorage.setItem('ai_modelName', document.getElementById('modelNameInput').value);
+    
+        // Визуальный фидбек на кнопке
+        const btnIcon = document.querySelector('button[title="Сохранить настройки"] i');
+        btnIcon.className = 'bi bi-check-lg text-success';
+        setTimeout(() => btnIcon.className = 'bi bi-floppy text-primary', 2000);
+        };
+
+        let selectedFiles = [];
+
+        // Обработка выбора файлов
+        document.getElementById('answersFiles').addEventListener('change', function(e) {
+            const newFiles = Array.from(e.target.files);
+            selectedFiles = selectedFiles.concat(newFiles);
+            renderFileList();
+            e.target.value = ''; // Сбрасываем input, чтобы можно было выбрать те же файлы при необходимости
             });
 
-            uploadForm.addEventListener('submit', async function (e) {
-                e.preventDefault();
-                const files = document.getElementById('answersFiles').files;
-                const btn = document.getElementById('uploadBtn');
+        // Функция удаления файла из списка
+        window.removeFile = function(index) {
+        selectedFiles.splice(index, 1);
+        renderFileList();
+        };
 
-                if (files.length === 0) return;
+        // Функция отрисовки UI элементов
+        function renderFileList() {
+        const container = document.getElementById('fileListContainer');
+        container.innerHTML = '';
+    
+        selectedFiles.forEach((file, index) => {
+        const item = document.createElement('div');
+        item.className = 'd-flex justify-content-between align-items-center p-2 border rounded small';
+        item.style.backgroundColor = 'var(--app-surface-hover)';
+        item.innerHTML = `
+        <span class="text-truncate" style="max-width: 85%;" title="${file.name}">
+        <i class="bi bi-file-earmark-text me-2 text-primary"></i> ${file.name}
+        </span>
+        <button type="button" class="btn-close" style="font-size: 0.6rem;" onclick="removeFile(${index})"></button>
+        `;
+        container.appendChild(item);
+        });
+        }
 
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Обработка...';
-                btn.disabled = true;
+        uploadForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+    
+        // Берем файлы из массива вместо input
+        const files = selectedFiles;
+        const btn = document.getElementById('uploadBtn');
 
-                const formData = new FormData();
-                for (let i = 0; i < files.length; i++) {
-                    formData.append('answersFiles', files[i]);
-                }
+        if (files.length === 0) {
+        alert("Пожалуйста, добавьте файлы для загрузки.");
+        return;
+        }
+
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Обработка...';
+        btn.disabled = true;
+
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+        formData.append('answersFiles', files[i]);
+        }
 
                 try {
                     const response = await fetch('/api/analyzer/upload', {
@@ -273,8 +334,9 @@
                     body: JSON.stringify({
                         redZoneQuestions: targetQuestions,
                         promptType: promptType,
-                        modelProvider: document.getElementById('modelSelect').value,
-                        apiKey: apiKey
+        modelProvider: document.getElementById('modelSelect').value,
+        apiKey: apiKey,
+        customModelName: document.getElementById('modelNameInput').value.trim()
                     })
                 });
 

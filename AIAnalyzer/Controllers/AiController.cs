@@ -59,6 +59,7 @@ namespace AIAnalyzer.Controllers
         public string? PromptType { get; set; }
         public string? ModelProvider { get; set; }
         public string? ApiKey { get; set; }
+        public string? CustomModelName { get; set; }
     }
 
     public class CustomPromptRequest
@@ -66,5 +67,6 @@ namespace AIAnalyzer.Controllers
         public string Prompt { get; set; }
         public string ModelProvider { get; set; }
         public string ApiKey { get; set; }
+        public string? CustomModelName { get; set; }
     }
 }

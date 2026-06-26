@@ -12,8 +12,8 @@ namespace AIAnalyzer.Services
 {
     public interface IAiService
     {
-        Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider, string userApiKey);
-        Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey);
+        Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider, string userApiKey, string customModelName = null);
+        Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey, string customModelName = null);
     }
 
     public class AiService : IAiService
@@ -27,7 +27,7 @@ namespace AIAnalyzer.Services
             _configuration = configuration;
         }
 
-        public async Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider, string userApiKey)
+        public async Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider, string userApiKey, string customModelName = null)
         {
             var sb = new StringBuilder();
             sb.AppendLine("Статистика проблемных вопросов:");
@@ -44,16 +44,16 @@ namespace AIAnalyzer.Services
                 _ => "Ты — аналитик. Проанализируй данные и дай советы."
             };
 
-            return await SendApiRequestAsync(systemPrompt, sb.ToString(), modelProvider.ToLower(), userApiKey);
+            return await SendApiRequestAsync(systemPrompt, sb.ToString(), modelProvider.ToLower(), userApiKey, customModelName);
         }
 
-        public async Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey)
+        public async Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey, string customModelName = null)
         {
             string systemPrompt = "Ты — помощник преподавателя и аналитик учебных курсов. Отвечай на вопросы пользователя профессионально, четко и с примерами.";
-            return await SendApiRequestAsync(systemPrompt, userPrompt, modelProvider.ToLower(), userApiKey);
+            return await SendApiRequestAsync(systemPrompt, userPrompt, modelProvider.ToLower(), userApiKey, customModelName);
         }
 
-        private async Task<string> SendApiRequestAsync(string systemPrompt, string userContent, string modelProvider, string userApiKey)
+        private async Task<string> SendApiRequestAsync(string systemPrompt, string userContent, string modelProvider, string userApiKey, string customModelName = null)
         {
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd("AIAnalyzerApp/1.0");
@@ -68,10 +68,15 @@ namespace AIAnalyzer.Services
             string apiUrl = _configuration[$"AiSettings:{section}:ApiUrl"];
             string modelName = _configuration[$"AiSettings:{section}:ModelName"];
 
-            // Если ключ ввели на сайте — используем его. Иначе берем из appsettings.json
+            // Приоритет отдается пользовательской модели, если она не пустая
+            string finalModelName = !string.IsNullOrWhiteSpace(customModelName)
+                ? customModelName
+                : _configuration[$"AiSettings:{section}:ModelName"];
+
             string finalApiKey = !string.IsNullOrWhiteSpace(userApiKey)
                 ? userApiKey
                 : _configuration[$"AiSettings:{section}:ApiKey"];
+
 
             if (string.IsNullOrWhiteSpace(finalApiKey))
                 throw new InvalidOperationException($"Ключ API для '{section}' не передан в интерфейсе и не найден в настройках.");
@@ -80,7 +85,7 @@ namespace AIAnalyzer.Services
 
             var requestBody = new
             {
-                model = modelName,
+                model = finalModelName,
                 messages = new[]
                 {
                     new { role = "system", content = systemPrompt },
