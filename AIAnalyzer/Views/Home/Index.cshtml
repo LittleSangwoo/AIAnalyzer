@@ -1,4 +1,4 @@
-﻿﻿@{
+﻿@{
     ViewData["Title"] = "Аналитика";
 }
 
@@ -68,7 +68,10 @@
                     <form id="uploadForm" class="mb-5">
                         <label class="form-label small text-muted fw-semibold mb-2">Файлы ответов</label>
                         <input class="form-control form-control-sm mb-3 light-theme-border" style="background-color: var(--app-surface-hover); color: inherit;"
-                               type="file" id="answersFiles" accept=".csv,.xlsx" multiple required>
+                               type="file" id="answersFiles" accept=".csv,.xlsx" multiple>
+                        
+                        <div id="fileListContainer" class="d-flex flex-column gap-2 mb-3"></div>
+
                         <button type="submit" class="btn btn-gradient-primary w-100 fw-semibold py-2 shadow-sm" id="uploadBtn" style="border-radius: 8px;">
                             Загрузить данные
                         </button>
@@ -205,7 +208,7 @@
                 <hr style="border-color: var(--app-border);">
                 
                 <h6 class="fw-bold text-primary mt-4"><i class="bi bi-1-circle-fill me-2"></i>Шаг 1. Загрузка ваших данных</h6>
-                <p>В левой колонке <b>«Параметры»</b> нажмите на кнопку <i>«Выберите файлы»</i>. Найдите на компьютере файлы в формате Excel (.xlsx или .csv) с ответами студентов. Затем нажмите синюю кнопку <b>«Загрузить данные»</b>. Программа сама всё прочитает и посчитает.</p>
+                <p>В левой колонке <b>«Параметры»</b> нажмите на кнопку <i>«Выберите файлы»</i>. Найдите на компьютере файлы в формате Excel (.xlsx или .csv) с ответами студентов. Вы можете выбирать и добавлять несколько файлов по очереди. Затем нажмите синюю кнопку <b>«Загрузить данные»</b>.</p>
 
                 <h6 class="fw-bold text-primary mt-4"><i class="bi bi-2-circle-fill me-2"></i>Шаг 2. Изучение результатов</h6>
                 <p>В центральной колонке появится таблица со всеми вопросами. Программа умная и сразу раскрашивает их для вашего удобства:</p>
@@ -242,6 +245,35 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <script>
+        // Глобальный массив для хранения выбранных файлов
+        let selectedFiles = [];
+
+        // Функция удаления файла из списка
+        window.removeFile = function(index) {
+            selectedFiles.splice(index, 1);
+            renderFileList();
+        };
+
+        // Отрисовка элементов списка файлов под кнопкой выбора
+        function renderFileList() {
+            const container = document.getElementById('fileListContainer');
+            container.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'd-flex justify-content-between align-items-center p-2 rounded small shadow-sm light-theme-border';
+                item.style.border = '1px solid var(--app-border)';
+                item.style.backgroundColor = 'var(--app-surface-hover)';
+                item.innerHTML = `
+                    <span class="text-truncate" style="max-width: 85%;" title="${file.name}">
+                        <i class="bi bi-file-earmark-text me-2 text-primary"></i> ${file.name}
+                    </span>
+                    <button type="button" class="btn-close" style="font-size: 0.6rem;" onclick="removeFile(${index})"></button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
         document.addEventListener("DOMContentLoaded", function () {
             // Настраиваем Markdown
             if (typeof marked !== 'undefined') {
@@ -269,6 +301,14 @@
                 });
             });
 
+            // Обработка выбора файлов в инпуте
+            document.getElementById('answersFiles').addEventListener('change', function(e) {
+                const newFiles = Array.from(e.target.files);
+                selectedFiles = selectedFiles.concat(newFiles);
+                renderFileList();
+                e.target.value = ''; // Сбрасываем input, чтобы можно было выбрать те же файлы снова
+            });
+
             const uploadForm = document.getElementById('uploadForm');
 
             document.getElementById('selectAllCb').addEventListener('change', function(e) {
@@ -282,17 +322,20 @@
 
             uploadForm.addEventListener('submit', async function (e) {
                 e.preventDefault();
-                const files = document.getElementById('answersFiles').files;
                 const btn = document.getElementById('uploadBtn');
 
-                if (files.length === 0) return;
+                if (selectedFiles.length === 0) {
+                    alert("Пожалуйста, добавьте файлы для загрузки.");
+                    return;
+                }
 
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Обработка...';
                 btn.disabled = true;
 
                 const formData = new FormData();
-                for (let i = 0; i < files.length; i++) {
-                    formData.append('answersFiles', files[i]);
+                // Используем наш накопленный массив selectedFiles вместо input.files
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    formData.append('answersFiles', selectedFiles[i]);
                 }
 
                 try {
@@ -313,6 +356,10 @@
                     document.getElementById('filterYellow').checked = true;
                     document.getElementById('filterGreen').checked = true;
                     filterResults();
+
+                    // Очищаем список добавленных файлов после успешной загрузки на сервер
+                    selectedFiles = [];
+                    renderFileList();
 
                 } catch (error) {
                     alert("Ошибка системы: " + error.message);
@@ -454,7 +501,7 @@
             XLSX.writeFile(workbook, `Статистика_курса_${new Date().toLocaleDateString('ru-RU')}.xlsx`);
         }
 
-        // Вспомогательная функция для парсинга Markdown (из message (1).txt)
+        // Вспомогательная функция для парсинга Markdown
         async function processAiResponse(response, outputElement) {
             if (!response.ok) throw new Error(await response.text());
             let rawText = await response.text();
@@ -477,7 +524,6 @@
             const checkedIds = Array.from(document.querySelectorAll('.question-cb:checked')).map(cb => cb.value);
             let targetQuestions = [];
             
-            // Логика сортировки и выборки (из message (1).txt)
             if (promptType === 'course_redesign' || promptType === 'test_redesign') {
                 targetQuestions = [...window.loadedQuestions]
                     .sort((a, b) => {
@@ -515,7 +561,7 @@
                         redZoneQuestions: targetQuestions,
                         promptType: promptType,
                         modelProvider: document.getElementById('modelSelect').value,
-                        apiKey: "" // Оставляем пустую строку, как в Index.cshtml
+                        apiKey: ""
                     })
                 });
                 const [response] = await Promise.all([fetchPromise, new Promise(r => setTimeout(r, 900))]);
@@ -543,7 +589,7 @@
                     body: JSON.stringify({
                         prompt: prompt,
                         modelProvider: document.getElementById('modelSelect').value,
-                        apiKey: "" // Оставляем пустую строку
+                        apiKey: "" 
                     })
                 });
                 const [response] = await Promise.all([fetchPromise, new Promise(r => setTimeout(r, 900))]);
