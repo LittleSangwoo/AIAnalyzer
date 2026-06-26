@@ -1,26 +1,12 @@
 ﻿﻿@{
-ViewData["Title"] = "Аналитика";
+    ViewData["Title"] = "Аналитика";
 }
 
 <style>
     /* Стили для активных кнопок фильтра (работают корректно в обеих темах) */
-    .btn-check:checked + .btn-outline-danger {
-        background-color: #dc3545;
-        color: white;
-        border-color: #dc3545;
-    }
-
-    .btn-check:checked + .btn-outline-warning {
-        background-color: #ffc107;
-        color: black;
-        border-color: #ffc107;
-    }
-
-    .btn-check:checked + .btn-outline-success {
-        background-color: #198754;
-        color: white;
-        border-color: #198754;
-    }
+    .btn-check:checked + .btn-outline-danger { background-color: #dc3545; color: white; border-color: #dc3545; }
+    .btn-check:checked + .btn-outline-warning { background-color: #ffc107; color: black; border-color: #ffc107; }
+    .btn-check:checked + .btn-outline-success { background-color: #198754; color: white; border-color: #198754; }
 
     /* Усиливаем контраст ТОЛЬКО в светлой теме */
     @@media (prefers-color-scheme: light) {
@@ -28,18 +14,16 @@ ViewData["Title"] = "Аналитика";
             border: 1px solid #ced4da !important;
             box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05) !important;
         }
-
         html:not([data-bs-theme="dark"]) .light-theme-border {
             border-color: #ced4da !important;
         }
     }
-
+    
     /* Фикс на случай ручного переключателя (data-bs-theme="light") */
     html[data-bs-theme="light"] .pro-card, body[data-theme="light"] .pro-card {
         border: 1px solid #ced4da !important;
         box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05) !important;
     }
-
     html[data-bs-theme="light"] .light-theme-border, body[data-theme="light"] .light-theme-border {
         border-color: #ced4da !important;
     }
@@ -49,32 +33,27 @@ ViewData["Title"] = "Аналитика";
         font-size: 0.95rem;
         color: inherit;
     }
-
-        .ai-markdown-content h1, .ai-markdown-content h2, .ai-markdown-content h3 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--app-accent, #0d6efd);
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .ai-markdown-content p {
-            margin-bottom: 0.75rem;
-        }
-
-        .ai-markdown-content ul, .ai-markdown-content ol {
-            padding-left: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .ai-markdown-content li {
-            margin-bottom: 0.25rem;
-        }
-
-        .ai-markdown-content strong {
-            font-weight: 600;
-            color: inherit;
-        }
+    .ai-markdown-content h1, .ai-markdown-content h2, .ai-markdown-content h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--app-accent, #0d6efd);
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .ai-markdown-content p {
+        margin-bottom: 0.75rem;
+    }
+    .ai-markdown-content ul, .ai-markdown-content ol {
+        padding-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .ai-markdown-content li {
+        margin-bottom: 0.25rem;
+    }
+    .ai-markdown-content strong {
+        font-weight: 600;
+        color: inherit;
+    }
 </style>
 
 <div class="container-fluid" style="height: calc(100vh - 120px);">
@@ -107,13 +86,13 @@ ViewData["Title"] = "Аналитика";
                             <i class="bi bi-download me-1"></i> Выгрузить Excel
                         </button>
                     </div>
-
+                    
                     <div class="d-flex gap-2">
                         <div class="input-group input-group-sm shadow-sm flex-grow-1 light-theme-border" style="border-radius: 8px; overflow: hidden; border: 1px solid var(--app-border);">
                             <span class="input-group-text border-0" style="background-color: var(--app-surface-hover);"><i class="bi bi-search text-muted"></i></span>
                             <input type="text" id="searchInput" class="form-control border-0 shadow-none" style="background-color: var(--app-surface-hover); color: inherit;" placeholder="Поиск по номеру и вопросу..." onkeyup="filterResults()">
                         </div>
-
+                        
                         <div class="btn-group btn-group-sm shadow-sm flex-shrink-0" role="group" aria-label="Фильтр по зонам" style="border-radius: 8px;">
                             <input type="checkbox" class="btn-check" id="filterRed" value="red" checked autocomplete="off" onchange="filterResults()">
                             <label class="btn btn-outline-danger fw-bold px-3" for="filterRed" title="Показывать красную зону">🔴</label>
@@ -157,10 +136,10 @@ ViewData["Title"] = "Аналитика";
         <div class="col-xl-5 col-lg-5 d-flex flex-column h-100">
             <div class="pro-card flex-grow-1 d-flex flex-column">
                 <div class="pro-card-header border-0 pb-0">
-
+                    
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0 fw-bold"><i class="bi bi-magic me-2" style="color: var(--app-accent);"></i>Интеллектуальный анализ</h6>
-
+                        
                         <div class="dropdown shadow-sm light-theme-border" style="border-radius: 20px; border: 1px solid var(--app-border);">
                             <button class="btn btn-sm border-0 dropdown-toggle px-3 fw-semibold" type="button" id="modelDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 20px; font-size: 0.8rem; background-color: var(--app-surface-hover); color: inherit;">
                                 <i class="bi bi-cpu text-primary me-1"></i> <span id="selectedModelText">Groq (Llama 3)</span>
@@ -174,7 +153,7 @@ ViewData["Title"] = "Аналитика";
                     </div>
 
                     <div class="d-flex gap-2 mb-3">
-                        <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('rewrite')"
+                        <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('rewrite')" 
                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Анализирует текст выбранных вопросов и предлагает более понятные и грамотные формулировки для студентов.">
                             <i class="bi bi-pencil-square text-primary mb-1 d-block fs-5"></i> Улучшить текст
                         </button>
@@ -207,7 +186,7 @@ ViewData["Title"] = "Аналитика";
     </div>
 </div>
 
-<button class="btn btn-info text-white rounded-circle shadow-lg d-flex align-items-center justify-content-center"
+<button class="btn btn-info text-white rounded-circle shadow-lg d-flex align-items-center justify-content-center" 
         style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; z-index: 1050; font-size: 1.5rem; transition: transform 0.2s;"
         data-bs-toggle="modal" data-bs-target="#helpModal"
         onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
@@ -224,7 +203,7 @@ ViewData["Title"] = "Аналитика";
             <div class="modal-body p-4 fs-6" style="line-height: 1.6;">
                 <p class="lead fw-semibold">Добро пожаловать в систему аналитики! Здесь вы можете легко проверить, насколько хорошо студенты справляются с тестами.</p>
                 <hr style="border-color: var(--app-border);">
-
+                
                 <h6 class="fw-bold text-primary mt-4"><i class="bi bi-1-circle-fill me-2"></i>Шаг 1. Загрузка ваших данных</h6>
                 <p>В левой колонке <b>«Параметры»</b> нажмите на кнопку <i>«Выберите файлы»</i>. Найдите на компьютере файлы в формате Excel (.xlsx или .csv) с ответами студентов. Затем нажмите синюю кнопку <b>«Загрузить данные»</b>. Программа сама всё прочитает и посчитает.</p>
 
@@ -241,8 +220,7 @@ ViewData["Title"] = "Аналитика";
                 <p>В правой колонке живет ваш личный виртуальный ассистент. Он поможет исправить сложные вопросы.</p>
                 <ol>
                     <li>Поставьте галочки слева от самых сложных (красных) вопросов в таблице.</li>
-                    <li>
-                        Нажмите одну из трех кнопок с картинками справа:
+                    <li>Нажмите одну из трех кнопок с картинками справа:
                         <ul>
                             <li>📝 <b>Улучшить текст:</b> Ассистент перепишет ваш вопрос так, чтобы студенты перестали в нем путаться.</li>
                             <li>📘 <b>Аудит курса:</b> Ассистент подскажет, какую тему нужно объяснить студентам еще раз.</li>
@@ -283,7 +261,7 @@ ViewData["Title"] = "Аналитика";
                     e.preventDefault();
                     document.querySelectorAll('.model-select-item').forEach(el => el.classList.remove('active', 'fw-bold'));
                     this.classList.add('active', 'fw-bold');
-
+                    
                     const val = this.getAttribute('data-val');
                     const text = this.innerText;
                     document.getElementById('modelSelect').value = val;
@@ -330,7 +308,7 @@ ViewData["Title"] = "Аналитика";
                     window.loadedQuestions = questionsList;
                     renderTable(questionsList);
                     document.getElementById('searchInput').value = '';
-
+                    
                     document.getElementById('filterRed').checked = true;
                     document.getElementById('filterYellow').checked = true;
                     document.getElementById('filterGreen').checked = true;
@@ -358,9 +336,9 @@ ViewData["Title"] = "Аналитика";
                 const text = row.getAttribute('data-qtext');
                 const id = row.getAttribute('data-qid');
                 const zone = row.getAttribute('data-qzone');
-
+                
                 const matchText = text.includes(search) || id.includes(search);
-
+                
                 let matchZone = false;
                 if (zone === 'red' && showRed) matchZone = true;
                 if (zone === 'yellow' && showYellow) matchZone = true;
@@ -370,7 +348,7 @@ ViewData["Title"] = "Аналитика";
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
-                    row.querySelector('.question-cb').checked = false;
+                    row.querySelector('.question-cb').checked = false; 
                 }
             });
             updateSelectAllCb();
@@ -414,7 +392,7 @@ ViewData["Title"] = "Аналитика";
 
                 tr.className = rowClass + ' data-row border-bottom';
                 tr.setAttribute('data-qtext', qText.toLowerCase());
-                tr.setAttribute('data-qid', String(qId).toLowerCase());
+                tr.setAttribute('data-qid', String(qId).toLowerCase()); 
                 tr.setAttribute('data-qzone', zoneStr);
 
                 tr.innerHTML = `
@@ -442,7 +420,7 @@ ViewData["Title"] = "Аналитика";
                 alert("Нет данных для выгрузки.");
                 return;
             }
-
+            
             const visibleRowsIds = Array.from(document.querySelectorAll('#resultsBody tr.data-row'))
                 .filter(tr => tr.style.display !== 'none')
                 .map(tr => tr.querySelector('.question-cb').value);
@@ -498,7 +476,7 @@ ViewData["Title"] = "Аналитика";
             const aiOutput = document.getElementById('ai-output');
             const checkedIds = Array.from(document.querySelectorAll('.question-cb:checked')).map(cb => cb.value);
             let targetQuestions = [];
-
+            
             // Логика сортировки и выборки (из message (1).txt)
             if (promptType === 'course_redesign' || promptType === 'test_redesign') {
                 targetQuestions = [...window.loadedQuestions]
@@ -570,7 +548,7 @@ ViewData["Title"] = "Аналитика";
                 });
                 const [response] = await Promise.all([fetchPromise, new Promise(r => setTimeout(r, 900))]);
                 await processAiResponse(response, aiOutput);
-
+                
                 document.getElementById('customPrompt').value = '';
             } catch (error) {
                 aiOutput.innerHTML = `<div class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
