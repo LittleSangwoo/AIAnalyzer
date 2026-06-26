@@ -9,6 +9,7 @@ namespace AIAnalyzer.Models.DTOs
         public int CorrectCount { get; set; }
         public int ErrorsCount { get; set; }
         public ErrorZone Zone { get; set; }
+        public List<string>? SampleAnswers { get; set; }
 
         // Оставляем поле для напарницы, куда её ИИ-сервис запишет ответ
         public string? AiRecommendation { get; set; }

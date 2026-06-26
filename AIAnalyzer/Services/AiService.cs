@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 using AIAnalyzer.Models.DTOs;
 using System.Net.Http.Headers;
@@ -12,7 +13,7 @@ namespace AIAnalyzer.Services
 {
     public interface IAiService
     {
-        Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider, string userApiKey);
+        Task<string> GenerateRecommendationAsync(List<QuestionStatDto> targetQuestions, string promptType, string modelProvider, string userApiKey);
         Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey);
     }
 
@@ -27,21 +28,111 @@ namespace AIAnalyzer.Services
             _configuration = configuration;
         }
 
-        public async Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider, string userApiKey)
+        public async Task<string> GenerateRecommendationAsync(List<QuestionStatDto> targetQuestions, string promptType, string modelProvider, string userApiKey)
+        {
+            if (targetQuestions.Count <= 40 || promptType.ToLower() == "rewrite")
+            {
+                return await ProcessSingleBatchAsync(targetQuestions, promptType, modelProvider, userApiKey);
+            }
+
+            var chunks = targetQuestions.Chunk(40).ToList();
+            var intermediateAnalyses = new List<string>();
+
+            for (int i = 0; i < chunks.Count; i++)
+            {
+                var chunk = chunks[i];
+                var sb = new StringBuilder();
+                sb.AppendLine($"ЧАСТЬ ДАННЫХ {i + 1} ИЗ {chunks.Count}:");
+
+                foreach (var q in chunk)
+                {
+                    sb.AppendLine($"- [{q.QuestionId}] \"{q.QuestionText}\" | Ошибок: {q.ErrorPercentage}% ({q.ErrorsCount} нев., {q.CorrectCount} вер.)");
+
+                    // ДОБАВЛЕНО: Передаем ответы студентов для анализа, если они есть
+                    if (q.SampleAnswers != null && q.SampleAnswers.Any())
+                    {
+                        sb.AppendLine($"  Ответы студентов: {string.Join(", ", q.SampleAnswers.Take(10))}");
+                    }
+                }
+
+                string intermediatePrompt = "Ты — аналитик. Твоя задача кратко выписать основные паттерны ошибок и проблемные темы из этой части данных. Не пиши длинных вступлений, только суть. Это пойдет в финальный отчет.";
+
+                string aiResponse = await SendApiRequestAsync(intermediatePrompt, sb.ToString(), modelProvider.ToLower(), userApiKey);
+                intermediateAnalyses.Add($"### Анализ части {i + 1}\n{aiResponse}");
+
+                if (i < chunks.Count - 1)
+                {
+                    await Task.Delay(15000);
+                }
+            }
+
+            var finalSb = new StringBuilder();
+            finalSb.AppendLine("Вот промежуточные выводы по всем частям курса:");
+            finalSb.AppendLine();
+            finalSb.AppendLine(string.Join("\n\n", intermediateAnalyses));
+
+            string finalSystemPrompt = promptType.ToLower() switch
+            {
+                "course_redesign" => @"Ты — старший методист образовательных программ. Тебе переданы скомпилированные отчеты об ошибках по всему курсу.
+Сделай глобальный вывод:
+1. Какие темы или концепции студенты массово не понимают?
+2. Дай 3-5 стратегических рекомендаций по доработке курса.
+Отвечай структурировано, в Markdown (заголовки ##, списки). Не упоминай, что данные были разбиты на части.",
+
+                "test_redesign" => @"Ты — специалист по оценке знаний. Перед тобой собранные выводы по провалам в тесте.
+Предложи, как изменить формат тестирования:
+1. Какие паттерны ошибок видны во всем тесте?
+2. Как сбалансировать тест и типы вопросов?
+Отвечай структурировано, в Markdown.",
+
+                _ => "Сделай финальный вывод на основе переданных данных. Используй Markdown."
+            };
+
+            await Task.Delay(5000);
+
+            return await SendApiRequestAsync(finalSystemPrompt, finalSb.ToString(), modelProvider.ToLower(), userApiKey);
+        }
+
+        private async Task<string> ProcessSingleBatchAsync(IEnumerable<QuestionStatDto> targetQuestions, string promptType, string modelProvider, string userApiKey)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Статистика проблемных вопросов:");
-            foreach (var q in redZoneQuestions)
+            sb.AppendLine("ДАННЫЕ:");
+            foreach (var q in targetQuestions)
             {
-                sb.AppendLine($"- Вопрос: \"{q.QuestionText}\" | Ошибок: {q.ErrorsCount}, Верно: {q.CorrectCount}");
+                sb.AppendLine($"- [{q.QuestionId}] \"{q.QuestionText}\" | Ошибок: {q.ErrorPercentage}% ({q.ErrorsCount} нев., {q.CorrectCount} вер.)");
+
+                // ДОБАВЛЕНО: Передаем ответы студентов
+                if (q.SampleAnswers != null && q.SampleAnswers.Any())
+                {
+                    sb.AppendLine($"  Ответы студентов: {string.Join(", ", q.SampleAnswers.Take(10))}");
+                }
             }
 
             string systemPrompt = promptType.ToLower() switch
             {
-                "rewrite" => "Ты — эксперт-тестолог. Переформулируй вопросы так, чтобы они стали ясными и профессиональными.",
-                "course_redesign" => "Ты — методист. Проанализируй ошибки и дай рекомендации, как улучшить структуру курса.",
-                "test_redesign" => "Ты — специалист по тестированию. Дай рекомендации по улучшению теста (варианты ответов, типы вопросов).",
-                _ => "Ты — аналитик. Проанализируй данные и дай советы."
+                // ДОБАВЛЕНА: Проверка ответов студентов на ошибки алгоритма СДО + сохранена твоя строчка про формат!
+                                "rewrite" => @"Ты — строгий методист и лингвист-тестолог. Твоя задача — не просто исправить вопросы, а найти ПРИЧИНУ массовых провалов.
+                Для КАЖДОГО вопроса:
+                1. Анализ провала: Сформулируй гипотезу. ВНИМАТЕЛЬНО проверь 'Ответы студентов' (если они переданы). Если студенты дают верный по смыслу ответ, но СДО его не засчитала (из-за регистра, опечатки, пробела или синонима), прямо укажи: 'Ошибка верификации СДО. Ответы студентов по сути верны'. Если таких ответов нет, укажи другую причину (сложная грамматическая конструкция, неясная формулировка).
+                2. Вердикт: Обязательно ли менять вопрос? (Например: 'Вопрос критически неисправен' или 'Требует перенастройки ответов в системе').
+                3. Исправление: Напиши идеальную, академически грамотную формулировку, которая исключает двоякое толкование и даст понимание в каком именно формате должен быть предоставлен ответ'.
+
+                Отвечай в формате таблицы или четкого списка с заголовками. Твоя цель — сделать тест проверяющим знания, а не умение разгадывать ребусы или угадывать регистр.",
+
+                                "course_redesign" => @"Ты — строгий методист. Посмотри на картину проваленных вопросов:
+                1. Какие темы студенты массово не понимают?
+                2. Где не хватает материалов или практики?
+                3. Дай 3-5 стратегических рекомендаций по курсу.
+                Отвечай структурировано, в Markdown.",
+
+                                "test_redesign" => @"Ты — специалист по оценке знаний. Перед тобой статистика провалов.
+                Предложи, как изменить формат тестирования:
+                1. Стоит ли изменить тип проблемных вопросов?
+                2. Какие паттерны ошибок видны?
+                3. Как сбалансировать тест?
+                Отвечай структурировано, в Markdown.",
+
+                _ => "Проанализируй статистику. Используй Markdown."
             };
 
             return await SendApiRequestAsync(systemPrompt, sb.ToString(), modelProvider.ToLower(), userApiKey);
@@ -49,7 +140,7 @@ namespace AIAnalyzer.Services
 
         public async Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey)
         {
-            string systemPrompt = "Ты — помощник преподавателя и аналитик учебных курсов. Отвечай на вопросы пользователя профессионально, четко и с примерами.";
+            string systemPrompt = "Ты — умный помощник преподавателя и аналитик учебных курсов. Отвечай на вопросы пользователя профессионально, четко, по делу и с примерами. Обязательно используй Markdown (заголовки, списки, жирный текст) для удобства чтения.";
             return await SendApiRequestAsync(systemPrompt, userPrompt, modelProvider.ToLower(), userApiKey);
         }
 
@@ -68,7 +159,6 @@ namespace AIAnalyzer.Services
             string apiUrl = _configuration[$"AiSettings:{section}:ApiUrl"];
             string modelName = _configuration[$"AiSettings:{section}:ModelName"];
 
-            // Если ключ ввели на сайте — используем его. Иначе берем из appsettings.json
             string finalApiKey = !string.IsNullOrWhiteSpace(userApiKey)
                 ? userApiKey
                 : _configuration[$"AiSettings:{section}:ApiKey"];
@@ -86,7 +176,7 @@ namespace AIAnalyzer.Services
                     new { role = "system", content = systemPrompt },
                     new { role = "user", content = userContent }
                 },
-                temperature = 0.7
+                temperature = 0.5
             };
 
             var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");

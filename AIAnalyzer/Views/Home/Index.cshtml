@@ -1,65 +1,144 @@
-﻿@{
-    ViewData["Title"] = "Аналитика";
+﻿﻿@{
+ViewData["Title"] = "Аналитика";
 }
+
+<style>
+    /* Стили для активных кнопок фильтра (работают корректно в обеих темах) */
+    .btn-check:checked + .btn-outline-danger {
+        background-color: #dc3545;
+        color: white;
+        border-color: #dc3545;
+    }
+
+    .btn-check:checked + .btn-outline-warning {
+        background-color: #ffc107;
+        color: black;
+        border-color: #ffc107;
+    }
+
+    .btn-check:checked + .btn-outline-success {
+        background-color: #198754;
+        color: white;
+        border-color: #198754;
+    }
+
+    /* Усиливаем контраст ТОЛЬКО в светлой теме */
+    @@media (prefers-color-scheme: light) {
+        html:not([data-bs-theme="dark"]) .pro-card {
+            border: 1px solid #ced4da !important;
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05) !important;
+        }
+
+        html:not([data-bs-theme="dark"]) .light-theme-border {
+            border-color: #ced4da !important;
+        }
+    }
+
+    /* Фикс на случай ручного переключателя (data-bs-theme="light") */
+    html[data-bs-theme="light"] .pro-card, body[data-theme="light"] .pro-card {
+        border: 1px solid #ced4da !important;
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05) !important;
+    }
+
+    html[data-bs-theme="light"] .light-theme-border, body[data-theme="light"] .light-theme-border {
+        border-color: #ced4da !important;
+    }
+
+    /* Стили для ответов ИИ (Markdown), адаптированные под темы */
+    .ai-markdown-content {
+        font-size: 0.95rem;
+        color: inherit;
+    }
+
+        .ai-markdown-content h1, .ai-markdown-content h2, .ai-markdown-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--app-accent, #0d6efd);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .ai-markdown-content p {
+            margin-bottom: 0.75rem;
+        }
+
+        .ai-markdown-content ul, .ai-markdown-content ol {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .ai-markdown-content li {
+            margin-bottom: 0.25rem;
+        }
+
+        .ai-markdown-content strong {
+            font-weight: 600;
+            color: inherit;
+        }
+</style>
 
 <div class="container-fluid" style="height: calc(100vh - 120px);">
     <div class="row g-4 h-100">
 
-        <div class="col-xl-2 col-lg-3 d-flex flex-column h-100">
-            <div class="pro-card flex-grow-1">
+        <div class="col-xl-2 col-lg-2 d-flex flex-column h-100">
+            <div class="pro-card flex-grow-1 d-flex flex-column">
                 <div class="pro-card-header">
                     <h6 class="mb-0 fw-bold"><i class="bi bi-sliders me-2" style="color: var(--app-accent);"></i>Параметры</h6>
                 </div>
-                <div class="card-body p-4 d-flex flex-column">
+                <div class="card-body p-4 d-flex flex-column flex-grow-1">
                     <form id="uploadForm" class="mb-5">
                         <label class="form-label small text-muted fw-semibold mb-2">Файлы ответов</label>
-                        <input class="form-control form-control-sm mb-3" style="background-color: var(--app-surface-hover); border-color: var(--app-border);" type="file" id="answersFiles" accept=".csv,.xlsx" multiple required>
-                        <button type="submit" class="btn btn-gradient-primary w-100 fw-semibold py-2" id="uploadBtn">
+                        <input class="form-control form-control-sm mb-3 light-theme-border" style="background-color: var(--app-surface-hover); color: inherit;"
+                               type="file" id="answersFiles" accept=".csv,.xlsx" multiple required>
+                        <button type="submit" class="btn btn-gradient-primary w-100 fw-semibold py-2 shadow-sm" id="uploadBtn" style="border-radius: 8px;">
                             Загрузить данные
                         </button>
                     </form>
-
-                    <div class="mt-auto">
-                        <h6 class="fw-bold mb-3 fs-6">Доступ к нейросети</h6>
-                        <label class="form-label small text-muted fw-semibold">Провайдер</label>
-                        <select class="form-select form-select-sm mb-3" id="modelSelect" style="background-color: var(--app-surface-hover); border-color: var(--app-border);">
-                            <option value="groq" selected>Groq (Llama 3)</option>
-                            <option value="gigachat">GigaChat Pro</option>
-                        </select>
-
-                        <label class="form-label small text-muted fw-semibold">API Ключ</label>
-                        <div class="input-group input-group-sm shadow-sm" style="border-radius: 8px; overflow: hidden; border: 1px solid var(--app-border);">
-                            <input type="password" class="form-control border-0" id="apiKeyInput" placeholder="Введите токен..." style="background-color: var(--app-surface-hover);">
-                            <button class="btn btn-light border-0" type="button" title="Добавить ключ в систему (в разработке)" style="background-color: var(--app-surface-hover);">
-                                <i class="bi bi-plus-circle text-primary"></i>
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-6 col-lg-5 d-flex flex-column h-100">
-            <div class="pro-card flex-grow-1">
-                <div class="pro-card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2" style="color: var(--app-accent);"></i>Матрица результатов</h6>
-                    <button class="btn btn-sm btn-outline-success fw-semibold" style="border-radius: 8px;" type="button" onclick="exportToExcel()">
-                        <i class="bi bi-download me-1"></i> Excel
-                    </button>
+        <div class="col-xl-5 col-lg-5 d-flex flex-column h-100">
+            <div class="pro-card flex-grow-1 d-flex flex-column">
+                <div class="pro-card-header pb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2" style="color: var(--app-accent);"></i>Матрица результатов</h6>
+                        <button class="btn btn-sm btn-outline-success fw-semibold shadow-sm light-theme-border" style="border-radius: 8px;" type="button" onclick="exportToExcel()">
+                            <i class="bi bi-download me-1"></i> Выгрузить Excel
+                        </button>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <div class="input-group input-group-sm shadow-sm flex-grow-1 light-theme-border" style="border-radius: 8px; overflow: hidden; border: 1px solid var(--app-border);">
+                            <span class="input-group-text border-0" style="background-color: var(--app-surface-hover);"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" id="searchInput" class="form-control border-0 shadow-none" style="background-color: var(--app-surface-hover); color: inherit;" placeholder="Поиск по номеру и вопросу..." onkeyup="filterResults()">
+                        </div>
+
+                        <div class="btn-group btn-group-sm shadow-sm flex-shrink-0" role="group" aria-label="Фильтр по зонам" style="border-radius: 8px;">
+                            <input type="checkbox" class="btn-check" id="filterRed" value="red" checked autocomplete="off" onchange="filterResults()">
+                            <label class="btn btn-outline-danger fw-bold px-3" for="filterRed" title="Показывать красную зону">🔴</label>
+
+                            <input type="checkbox" class="btn-check" id="filterYellow" value="yellow" checked autocomplete="off" onchange="filterResults()">
+                            <label class="btn btn-outline-warning fw-bold px-3" for="filterYellow" title="Показывать желтую зону">🟡</label>
+
+                            <input type="checkbox" class="btn-check" id="filterGreen" value="green" checked autocomplete="off" onchange="filterResults()">
+                            <label class="btn btn-outline-success fw-bold px-3" for="filterGreen" title="Показывать зеленую зону">🟢</label>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="table-responsive scrollable-area flex-grow-1" style="height: 0;">
                     <table class="table table-hover align-middle mb-0 border-0" id="resultsTable">
-                        <thead style="background-color: var(--app-surface-hover); position: sticky; top: 0; z-index: 1;">
+                        <thead style="background-color: var(--app-surface-hover); position: sticky; top: 0; z-index: 1; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
                             <tr>
                                 <th class="text-center" style="width: 50px;">
-                                    <input class="form-check-input elegant-checkbox" type="checkbox" id="selectAllCb" title="Выбрать все">
+                                    <input class="form-check-input elegant-checkbox border-secondary" type="checkbox" id="selectAllCb" title="Выбрать все видимые">
                                 </th>
-                                <th class="text-muted fw-semibold text-uppercase" style="font-size: 0.8em;">ID</th>
-                                <th class="text-muted fw-semibold text-uppercase" style="font-size: 0.8em;">Текст вопроса</th>
-                                <th class="text-center text-muted fw-semibold text-uppercase" style="font-size: 0.8em;">Верно</th>
-                                <th class="text-center text-muted fw-semibold text-uppercase" style="font-size: 0.8em;">Ошибки</th>
-                                <th class="text-center text-muted fw-semibold text-uppercase" style="font-size: 0.8em;">%</th>
+                                <th class="text-muted fw-semibold text-uppercase" style="font-size: 0.85rem;">ID</th>
+                                <th class="text-muted fw-semibold text-uppercase" style="font-size: 0.85rem;">Текст вопроса</th>
+                                <th class="text-center text-muted fw-semibold text-uppercase" style="font-size: 0.85rem;" title="Правильных ответов">Верно</th>
+                                <th class="text-center text-muted fw-semibold text-uppercase" style="font-size: 0.85rem;" title="Количество ошибок">Ошибки</th>
+                                <th class="text-center text-muted fw-semibold text-uppercase" style="font-size: 0.85rem;" title="Процент допущенных ошибок">% ошибок</th>
                             </tr>
                         </thead>
                         <tbody id="resultsBody">
@@ -75,34 +154,51 @@
             </div>
         </div>
 
-        <div class="col-xl-4 col-lg-4 d-flex flex-column h-100">
-            <div class="pro-card flex-grow-1">
+        <div class="col-xl-5 col-lg-5 d-flex flex-column h-100">
+            <div class="pro-card flex-grow-1 d-flex flex-column">
                 <div class="pro-card-header border-0 pb-0">
-                    <h6 class="mb-3 fw-bold"><i class="bi bi-magic me-2" style="color: var(--app-accent);"></i>Интеллектуальный анализ</h6>
 
-                    <div class="d-flex gap-2 mb-2">
-                        <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('rewrite')">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 fw-bold"><i class="bi bi-magic me-2" style="color: var(--app-accent);"></i>Интеллектуальный анализ</h6>
+
+                        <div class="dropdown shadow-sm light-theme-border" style="border-radius: 20px; border: 1px solid var(--app-border);">
+                            <button class="btn btn-sm border-0 dropdown-toggle px-3 fw-semibold" type="button" id="modelDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 20px; font-size: 0.8rem; background-color: var(--app-surface-hover); color: inherit;">
+                                <i class="bi bi-cpu text-primary me-1"></i> <span id="selectedModelText">Groq (Llama 3)</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="modelDropdown" style="border-radius: 12px; font-size: 0.85rem; background-color: var(--app-surface-hover);">
+                                <li><a class="dropdown-item model-select-item active" href="#" data-val="groq">Groq (Llama 3)</a></li>
+                                <li><a class="dropdown-item model-select-item" href="#" data-val="gigachat">GigaChat Pro</a></li>
+                            </ul>
+                            <input type="hidden" id="modelSelect" value="groq">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('rewrite')"
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="Анализирует текст выбранных вопросов и предлагает более понятные и грамотные формулировки для студентов.">
                             <i class="bi bi-pencil-square text-primary mb-1 d-block fs-5"></i> Улучшить текст
                         </button>
-                        <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('course_redesign')">
+                        <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('course_redesign')"
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="Оценивает общую структуру курса на основе ошибок студентов и дает методические советы преподавателю.">
                             <i class="bi bi-book text-warning mb-1 d-block fs-5"></i> Аудит курса
                         </button>
-                        <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('test_redesign')">
+                        <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('test_redesign')"
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="Предлагает способы изменения формата самого тестирования (типы ответов, структура) для повышения объективности.">
                             <i class="bi bi-sliders text-success mb-1 d-block fs-5"></i> Формат теста
                         </button>
                     </div>
 
-                    <div class="input-group input-group-sm shadow-sm mb-3" style="border-radius: 8px; overflow: hidden;">
-                        <input type="text" id="customPrompt" class="form-control border-0" style="background-color: var(--app-surface-hover);" placeholder="Задайте свой вопрос ИИ...">
-                        <button class="btn btn-dark fw-semibold px-3 border-0" type="button" onclick="sendCustomPrompt()">
-                            <i class="bi bi-send-fill"></i>
+                    <div class="d-flex align-items-center shadow-sm mb-3 light-theme-border" style="border-radius: 25px; border: 1px solid var(--app-border); background-color: var(--app-surface-hover); padding: 5px 8px;">
+                        <input type="text" id="customPrompt" class="form-control border-0 shadow-none bg-transparent" placeholder="Задайте свой вопрос ИИ..." style="font-size: 0.9rem; color: inherit;" onkeypress="if(event.key === 'Enter') sendCustomPrompt()">
+                        <button class="btn btn-primary d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" type="button" onclick="sendCustomPrompt()" style="border-radius: 50%; width: 34px; height: 34px; padding: 0;">
+                            <i class="bi bi-send-fill" style="font-size: 0.9rem;"></i>
                         </button>
                     </div>
                 </div>
 
-                <div class="card-body p-4 d-flex flex-column">
-                    <div id="ai-output" class="ai-assistant-panel scrollable-area">
-                        <span class="opacity-50"><i class="bi bi-stars me-2"></i>Готов к работе. Выберите вопросы в таблице слева и нажмите на нужный инструмент, либо задайте свой вопрос. Если вопросы не выбраны, ассистент проанализирует всю «Красную зону».</span>
+                <div class="card-body p-4 d-flex flex-column flex-grow-1" style="height: 0;">
+                    <div id="ai-output" class="ai-assistant-panel scrollable-area flex-grow-1 p-3 shadow-sm light-theme-border" style="background-color: var(--app-surface-hover); border-radius: 12px; border: 1px solid var(--app-border); height: 0; overflow-y: auto;">
+                        <span class="opacity-75"><i class="bi bi-stars me-2 text-primary"></i>Готов к работе. Выберите вопросы в таблице слева и нажмите на нужный инструмент, либо задайте свой вопрос.</span>
                     </div>
                 </div>
             </div>
@@ -111,16 +207,99 @@
     </div>
 </div>
 
+<button class="btn btn-info text-white rounded-circle shadow-lg d-flex align-items-center justify-content-center"
+        style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; z-index: 1050; font-size: 1.5rem; transition: transform 0.2s;"
+        data-bs-toggle="modal" data-bs-target="#helpModal"
+        onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+    <i class="bi bi-question-lg"></i>
+</button>
+
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 16px; background-color: var(--app-surface-hover); color: inherit;">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, var(--app-primary), var(--app-accent)); border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                <h5 class="modal-title fw-bold" id="helpModalLabel"><i class="bi bi-info-circle-fill me-2"></i>Как пользоваться программой</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body p-4 fs-6" style="line-height: 1.6;">
+                <p class="lead fw-semibold">Добро пожаловать в систему аналитики! Здесь вы можете легко проверить, насколько хорошо студенты справляются с тестами.</p>
+                <hr style="border-color: var(--app-border);">
+
+                <h6 class="fw-bold text-primary mt-4"><i class="bi bi-1-circle-fill me-2"></i>Шаг 1. Загрузка ваших данных</h6>
+                <p>В левой колонке <b>«Параметры»</b> нажмите на кнопку <i>«Выберите файлы»</i>. Найдите на компьютере файлы в формате Excel (.xlsx или .csv) с ответами студентов. Затем нажмите синюю кнопку <b>«Загрузить данные»</b>. Программа сама всё прочитает и посчитает.</p>
+
+                <h6 class="fw-bold text-primary mt-4"><i class="bi bi-2-circle-fill me-2"></i>Шаг 2. Изучение результатов</h6>
+                <p>В центральной колонке появится таблица со всеми вопросами. Программа умная и сразу раскрашивает их для вашего удобства:</p>
+                <ul>
+                    <li>🔴 <b>Красные строки:</b> Самые сложные вопросы. Студенты делают тут больше всего ошибок.</li>
+                    <li>🟡 <b>Желтые строки:</b> Вопросы средней сложности. Есть ошибки, но не критично.</li>
+                    <li>🟢 <b>Зеленые строки:</b> Идеальные вопросы. Почти все ответили верно.</li>
+                </ul>
+                <p><i>Секрет:</i> Вы можете нажимать на круглые кнопки 🔴🟡🟢 над таблицей, чтобы скрыть или показать нужные цвета.</p>
+
+                <h6 class="fw-bold text-primary mt-4"><i class="bi bi-3-circle-fill me-2"></i>Шаг 3. Умный помощник (Нейросеть)</h6>
+                <p>В правой колонке живет ваш личный виртуальный ассистент. Он поможет исправить сложные вопросы.</p>
+                <ol>
+                    <li>Поставьте галочки слева от самых сложных (красных) вопросов в таблице.</li>
+                    <li>
+                        Нажмите одну из трех кнопок с картинками справа:
+                        <ul>
+                            <li>📝 <b>Улучшить текст:</b> Ассистент перепишет ваш вопрос так, чтобы студенты перестали в нем путаться.</li>
+                            <li>📘 <b>Аудит курса:</b> Ассистент подскажет, какую тему нужно объяснить студентам еще раз.</li>
+                            <li>🎛 <b>Формат теста:</b> Ассистент посоветует, как переделать варианты ответов (например, убрать слишком очевидные).</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p class="text-muted small mb-0"><i class="bi bi-lightbulb-fill text-warning me-1"></i> Если вы не выберете вопросы галочками, ассистент автоматически проанализирует все красные вопросы за вас.</p>
+            </div>
+            <div class="modal-footer light-theme-border" style="border-top: 1px solid var(--app-border); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal" style="border-radius: 8px;">Понятно, спасибо!</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            // Настраиваем Markdown
+            if (typeof marked !== 'undefined') {
+                marked.use({
+                    breaks: true,
+                    gfm: true
+                });
+            }
+
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+
+            document.querySelectorAll('.model-select-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelectorAll('.model-select-item').forEach(el => el.classList.remove('active', 'fw-bold'));
+                    this.classList.add('active', 'fw-bold');
+
+                    const val = this.getAttribute('data-val');
+                    const text = this.innerText;
+                    document.getElementById('modelSelect').value = val;
+                    document.getElementById('selectedModelText').innerText = text;
+                });
+            });
+
             const uploadForm = document.getElementById('uploadForm');
 
             document.getElementById('selectAllCb').addEventListener('change', function(e) {
                 const cbs = document.querySelectorAll('.question-cb');
-                cbs.forEach(cb => cb.checked = e.target.checked);
+                cbs.forEach(cb => {
+                    if (cb.closest('tr').style.display !== 'none') {
+                        cb.checked = e.target.checked;
+                    }
+                });
             });
 
             uploadForm.addEventListener('submit', async function (e) {
@@ -150,6 +329,12 @@
                     const questionsList = data.questions || data.Questions || [];
                     window.loadedQuestions = questionsList;
                     renderTable(questionsList);
+                    document.getElementById('searchInput').value = '';
+
+                    document.getElementById('filterRed').checked = true;
+                    document.getElementById('filterYellow').checked = true;
+                    document.getElementById('filterGreen').checked = true;
+                    filterResults();
 
                 } catch (error) {
                     alert("Ошибка системы: " + error.message);
@@ -159,6 +344,43 @@
                 }
             });
         });
+
+        // Функция фильтрации (поиск по ID и тексту)
+        function filterResults() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const showRed = document.getElementById('filterRed').checked;
+            const showYellow = document.getElementById('filterYellow').checked;
+            const showGreen = document.getElementById('filterGreen').checked;
+
+            const rows = document.querySelectorAll('#resultsBody tr.data-row');
+
+            rows.forEach(row => {
+                const text = row.getAttribute('data-qtext');
+                const id = row.getAttribute('data-qid');
+                const zone = row.getAttribute('data-qzone');
+
+                const matchText = text.includes(search) || id.includes(search);
+
+                let matchZone = false;
+                if (zone === 'red' && showRed) matchZone = true;
+                if (zone === 'yellow' && showYellow) matchZone = true;
+                if (zone === 'green' && showGreen) matchZone = true;
+
+                if (matchText && matchZone) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                    row.querySelector('.question-cb').checked = false;
+                }
+            });
+            updateSelectAllCb();
+        }
+
+        function updateSelectAllCb() {
+            const visibleCbs = Array.from(document.querySelectorAll('.question-cb')).filter(cb => cb.closest('tr').style.display !== 'none');
+            const checkedVisible = visibleCbs.filter(cb => cb.checked);
+            document.getElementById('selectAllCb').checked = visibleCbs.length > 0 && (visibleCbs.length === checkedVisible.length);
+        }
 
         function renderTable(questions) {
             const tbody = document.getElementById('resultsBody');
@@ -177,27 +399,36 @@
                 const errs = q.errorsCount !== undefined ? q.errorsCount : q.ErrorsCount;
                 const corrs = q.correctCount !== undefined ? q.correctCount : q.CorrectCount;
                 const qId = q.questionId || q.QuestionId;
-                const qText = q.questionText || q.QuestionText;
+                const qText = String(q.questionText || q.QuestionText || '');
                 const percent = q.errorPercentage !== undefined ? q.errorPercentage : q.ErrorPercentage;
 
                 let rowClass = "zone-row-green";
+                let zoneStr = "green";
                 if (zoneVal === 2 || String(zoneVal).toLowerCase() === 'red') {
                     rowClass = "zone-row-red";
+                    zoneStr = "red";
                 } else if (zoneVal === 1 || String(zoneVal).toLowerCase() === 'yellow') {
                     rowClass = "zone-row-yellow";
+                    zoneStr = "yellow";
                 }
 
-                tr.className = rowClass;
+                tr.className = rowClass + ' data-row border-bottom';
+                tr.setAttribute('data-qtext', qText.toLowerCase());
+                tr.setAttribute('data-qid', String(qId).toLowerCase());
+                tr.setAttribute('data-qzone', zoneStr);
+
                 tr.innerHTML = `
-                    <td class="text-center align-middle">
-                        <input class="form-check-input elegant-checkbox question-cb" type="checkbox" value="${qId}">
+                    <td class="text-center align-middle border-end border-light">
+                        <input class="form-check-input elegant-checkbox question-cb border-secondary" type="checkbox" value="${qId}">
                     </td>
                     <td class="fw-bold opacity-75">${qId}</td>
-                    <td class="py-3 pe-3">${qText}</td>
+                    <td class="py-3 pe-3 border-end border-light">${qText}</td>
                     <td class="text-success fw-bold text-center">${corrs}</td>
                     <td class="text-danger fw-bold text-center">${errs}</td>
                     <td class="text-center fw-bold opacity-75">${percent}%</td>
                 `;
+
+                tr.querySelector('.question-cb').addEventListener('change', updateSelectAllCb);
                 tbody.appendChild(tr);
             });
         }
@@ -211,7 +442,19 @@
                 alert("Нет данных для выгрузки.");
                 return;
             }
-            const excelData = window.loadedQuestions.map(q => {
+
+            const visibleRowsIds = Array.from(document.querySelectorAll('#resultsBody tr.data-row'))
+                .filter(tr => tr.style.display !== 'none')
+                .map(tr => tr.querySelector('.question-cb').value);
+
+            const filteredQuestions = window.loadedQuestions.filter(q => visibleRowsIds.includes(String(q.questionId || q.QuestionId)));
+
+            if (filteredQuestions.length === 0) {
+                alert("Нет данных, удовлетворяющих условиям фильтра.");
+                return;
+            }
+
+            const excelData = filteredQuestions.map(q => {
                 const zoneVal = q.zone !== undefined ? q.zone : q.Zone;
                 let zoneText = "Зеленая";
                 if (zoneVal === 2 || String(zoneVal).toLowerCase() === 'red') zoneText = "Красная";
@@ -233,39 +476,59 @@
             XLSX.writeFile(workbook, `Статистика_курса_${new Date().toLocaleDateString('ru-RU')}.xlsx`);
         }
 
+        // Вспомогательная функция для парсинга Markdown (из message (1).txt)
+        async function processAiResponse(response, outputElement) {
+            if (!response.ok) throw new Error(await response.text());
+            let rawText = await response.text();
+            let parsedText = rawText;
+
+            try {
+                parsedText = JSON.parse(rawText);
+            } catch(e) { }
+
+            outputElement.innerHTML = `<div class="ai-markdown-content">${marked.parse(parsedText)}</div>`;
+        }
+
         async function sendToAi(promptType) {
-            if (!window.loadedQuestions) {
+            if (!window.loadedQuestions || window.loadedQuestions.length === 0) {
                 alert("Сначала загрузите матрицу данных.");
                 return;
             }
 
-            const apiKey = document.getElementById('apiKeyInput').value.trim();
             const aiOutput = document.getElementById('ai-output');
             const checkedIds = Array.from(document.querySelectorAll('.question-cb:checked')).map(cb => cb.value);
             let targetQuestions = [];
 
-            if (checkedIds.length > 0) {
-                targetQuestions = window.loadedQuestions.filter(q => checkedIds.includes(q.questionId || q.QuestionId));
+            // Логика сортировки и выборки (из message (1).txt)
+            if (promptType === 'course_redesign' || promptType === 'test_redesign') {
+                targetQuestions = [...window.loadedQuestions]
+                    .sort((a, b) => {
+                        const errA = a.errorPercentage !== undefined ? a.errorPercentage : a.ErrorPercentage;
+                        const errB = b.errorPercentage !== undefined ? b.errorPercentage : b.ErrorPercentage;
+                        return errB - errA;
+                    });
             } else {
-                targetQuestions = window.loadedQuestions.filter(q => {
-                     const z = q.zone !== undefined ? q.zone : q.Zone;
-                     return z === 2 || String(z).toLowerCase() === 'red';
-                });
-
-                if (targetQuestions.length === 0) {
-                    aiOutput.innerHTML = '<div class="text-success fw-bold d-flex align-items-center"><i class="bi bi-check-circle-fill fs-4 me-2"></i> Нет вопросов в красной зоне. Ручной выбор также пуст.</div>';
-                    return;
+                if (checkedIds.length > 0) {
+                    targetQuestions = window.loadedQuestions.filter(q => checkedIds.includes(String(q.questionId || q.QuestionId)));
+                } else {
+                    targetQuestions = window.loadedQuestions.filter(q => {
+                         const z = q.zone !== undefined ? q.zone : q.Zone;
+                         return z === 2 || String(z).toLowerCase() === 'red';
+                    });
                 }
+            }
+
+            if (targetQuestions.length === 0) {
+                aiOutput.innerHTML = '<div class="text-success fw-bold d-flex align-items-center"><i class="bi bi-check-circle-fill fs-4 me-2"></i> Нет вопросов для анализа. Выберите вопросы вручную.</div>';
+                return;
             }
 
             aiOutput.innerHTML = `
                 <div class="d-flex align-items-center mb-3">
                     <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
-                    <span class="fw-semibold text-primary">Ассистент анализирует данные...</span>
+                    <span class="fw-semibold text-primary">ИИ изучает ${targetQuestions.length} вопросов. Это может занять около минуты, пожалуйста, подождите...</span>
                 </div>
-                <div class="opacity-50 small">Обрабатывается вопросов: ${targetQuestions.length}</div>
             `;
-
             try {
                 const fetchPromise = fetch('/api/ai/recommendation', {
                     method: 'POST',
@@ -274,16 +537,11 @@
                         redZoneQuestions: targetQuestions,
                         promptType: promptType,
                         modelProvider: document.getElementById('modelSelect').value,
-                        apiKey: apiKey
+                        apiKey: "" // Оставляем пустую строку, как в Index.cshtml
                     })
                 });
-
-                const timerPromise = new Promise(resolve => setTimeout(resolve, 900));
-                const [response] = await Promise.all([fetchPromise, timerPromise]);
-
-                if (!response.ok) throw new Error(await response.text());
-                const resultText = await response.text();
-                aiOutput.innerHTML = `<i class="bi bi-stars text-primary fs-5 mb-2 d-block"></i>${resultText}`;
+                const [response] = await Promise.all([fetchPromise, new Promise(r => setTimeout(r, 900))]);
+                await processAiResponse(response, aiOutput);
             } catch (error) {
                 aiOutput.innerHTML = `<div class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
             }
@@ -293,7 +551,6 @@
             const prompt = document.getElementById('customPrompt').value.trim();
             if (!prompt) return alert("Введите текст запроса.");
 
-            const apiKey = document.getElementById('apiKeyInput').value.trim();
             const aiOutput = document.getElementById('ai-output');
             aiOutput.innerHTML = `
                 <div class="d-flex align-items-center mb-3">
@@ -301,7 +558,6 @@
                     <span class="fw-semibold text-primary">Обдумываю ответ...</span>
                 </div>
             `;
-
             try {
                 const fetchPromise = fetch('/api/ai/custom', {
                     method: 'POST',
@@ -309,16 +565,13 @@
                     body: JSON.stringify({
                         prompt: prompt,
                         modelProvider: document.getElementById('modelSelect').value,
-                        apiKey: apiKey
+                        apiKey: "" // Оставляем пустую строку
                     })
                 });
+                const [response] = await Promise.all([fetchPromise, new Promise(r => setTimeout(r, 900))]);
+                await processAiResponse(response, aiOutput);
 
-                const timerPromise = new Promise(resolve => setTimeout(resolve, 900));
-                const [response] = await Promise.all([fetchPromise, timerPromise]);
-
-                if (!response.ok) throw new Error(await response.text());
-                const resultText = await response.text();
-                aiOutput.innerHTML = `<i class="bi bi-chat-left-text text-primary fs-5 mb-2 d-block"></i>${resultText}`;
+                document.getElementById('customPrompt').value = '';
             } catch (error) {
                 aiOutput.innerHTML = `<div class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
             }
