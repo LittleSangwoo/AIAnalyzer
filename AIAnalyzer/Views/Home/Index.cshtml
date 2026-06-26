@@ -1,5 +1,5 @@
-﻿﻿@{
-ViewData["Title"] = "Аналитика";
+﻿@{
+    ViewData["Title"] = "Аналитика";
 }
 
 <div class="container-fluid" style="height: calc(100vh - 120px);">
@@ -23,12 +23,17 @@ ViewData["Title"] = "Аналитика";
                         <h6 class="fw-bold mb-3 fs-6">Доступ к нейросети</h6>
                         <label class="form-label small text-muted fw-semibold">Провайдер</label>
                         <select class="form-select form-select-sm mb-3" id="modelSelect" style="background-color: var(--app-surface-hover); border-color: var(--app-border);">
-                            <option value="deepseek" selected>DeepSeek (v3)</option>
+                            <option value="groq" selected>Groq (Llama 3)</option>
                             <option value="gigachat">GigaChat Pro</option>
                         </select>
 
-                        <label class="form-label small text-muted fw-semibold">Ключ (API Key)</label>
-                        <input type="password" class="form-control form-control-sm" id="apiKeyInput" placeholder="Введите токен..." style="background-color: var(--app-surface-hover); border-color: var(--app-border);">
+                        <label class="form-label small text-muted fw-semibold">API Ключ</label>
+                        <div class="input-group input-group-sm shadow-sm" style="border-radius: 8px; overflow: hidden; border: 1px solid var(--app-border);">
+                            <input type="password" class="form-control border-0" id="apiKeyInput" placeholder="Введите токен..." style="background-color: var(--app-surface-hover);">
+                            <button class="btn btn-light border-0" type="button" title="Добавить ключ в систему (в разработке)" style="background-color: var(--app-surface-hover);">
+                                <i class="bi bi-plus-circle text-primary"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -75,25 +80,29 @@ ViewData["Title"] = "Аналитика";
                 <div class="pro-card-header border-0 pb-0">
                     <h6 class="mb-3 fw-bold"><i class="bi bi-magic me-2" style="color: var(--app-accent);"></i>Интеллектуальный анализ</h6>
 
-                    <div class="d-flex gap-2 mb-3">
+                    <div class="d-flex gap-2 mb-2">
                         <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('rewrite')">
-                            <i class="bi bi-pencil-square text-primary mb-1 d-block fs-5"></i>
-                            Улучшить текст
+                            <i class="bi bi-pencil-square text-primary mb-1 d-block fs-5"></i> Улучшить текст
                         </button>
                         <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('course_redesign')">
-                            <i class="bi bi-book text-warning mb-1 d-block fs-5"></i>
-                            Аудит курса
+                            <i class="bi bi-book text-warning mb-1 d-block fs-5"></i> Аудит курса
                         </button>
                         <button type="button" class="btn btn-ai-action btn-sm flex-fill fw-semibold py-2 shadow-sm" onclick="sendToAi('test_redesign')">
-                            <i class="bi bi-sliders text-success mb-1 d-block fs-5"></i>
-                            Формат теста
+                            <i class="bi bi-sliders text-success mb-1 d-block fs-5"></i> Формат теста
+                        </button>
+                    </div>
+
+                    <div class="input-group input-group-sm shadow-sm mb-3" style="border-radius: 8px; overflow: hidden;">
+                        <input type="text" id="customPrompt" class="form-control border-0" style="background-color: var(--app-surface-hover);" placeholder="Задайте свой вопрос ИИ...">
+                        <button class="btn btn-dark fw-semibold px-3 border-0" type="button" onclick="sendCustomPrompt()">
+                            <i class="bi bi-send-fill"></i>
                         </button>
                     </div>
                 </div>
 
                 <div class="card-body p-4 d-flex flex-column">
                     <div id="ai-output" class="ai-assistant-panel scrollable-area">
-                        <span class="opacity-50"><i class="bi bi-stars me-2"></i>Готов к работе. Выберите вопросы в таблице слева и нажмите на нужный инструмент. Если вопросы не выбраны, ассистент проанализирует всю «Красную зону».</span>
+                        <span class="opacity-50"><i class="bi bi-stars me-2"></i>Готов к работе. Выберите вопросы в таблице слева и нажмите на нужный инструмент, либо задайте свой вопрос. Если вопросы не выбраны, ассистент проанализирует всю «Красную зону».</span>
                     </div>
                 </div>
             </div>
@@ -103,11 +112,12 @@ ViewData["Title"] = "Аналитика";
 </div>
 
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const uploadForm = document.getElementById('uploadForm');
 
-            // Логика чекбокса "Выбрать все"
             document.getElementById('selectAllCb').addEventListener('change', function(e) {
                 const cbs = document.querySelectorAll('.question-cb');
                 cbs.forEach(cb => cb.checked = e.target.checked);
@@ -153,7 +163,7 @@ ViewData["Title"] = "Аналитика";
         function renderTable(questions) {
             const tbody = document.getElementById('resultsBody');
             tbody.innerHTML = '';
-            document.getElementById('selectAllCb').checked = false; // Сброс главной галочки
+            document.getElementById('selectAllCb').checked = false;
 
             if (!questions || questions.length === 0) {
                  tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-5">Выборка пуста.</td></tr>`;
@@ -170,7 +180,6 @@ ViewData["Title"] = "Аналитика";
                 const qText = q.questionText || q.QuestionText;
                 const percent = q.errorPercentage !== undefined ? q.errorPercentage : q.ErrorPercentage;
 
-                // Используем нежные полупрозрачные фоны вместо кричащих
                 let rowClass = "zone-row-green";
                 if (zoneVal === 2 || String(zoneVal).toLowerCase() === 'red') {
                     rowClass = "zone-row-red";
@@ -194,6 +203,10 @@ ViewData["Title"] = "Аналитика";
         }
 
         function exportToExcel() {
+            if (typeof XLSX === 'undefined') {
+                alert("Библиотека Excel еще не загрузилась. Подождите секунду.");
+                return;
+            }
             if (!window.loadedQuestions || window.loadedQuestions.length === 0) {
                 alert("Нет данных для выгрузки.");
                 return;
@@ -220,21 +233,14 @@ ViewData["Title"] = "Аналитика";
             XLSX.writeFile(workbook, `Статистика_курса_${new Date().toLocaleDateString('ru-RU')}.xlsx`);
         }
 
-                async function sendToAi(promptType) {
+        async function sendToAi(promptType) {
             if (!window.loadedQuestions) {
                 alert("Сначала загрузите матрицу данных.");
                 return;
             }
 
             const apiKey = document.getElementById('apiKeyInput').value.trim();
-            if (!apiKey) {
-                alert("Для работы ассистента требуется API-ключ.");
-                return;
-            }
-
             const aiOutput = document.getElementById('ai-output');
-
-            // 1. Собираем галочки
             const checkedIds = Array.from(document.querySelectorAll('.question-cb:checked')).map(cb => cb.value);
             let targetQuestions = [];
 
@@ -247,12 +253,11 @@ ViewData["Title"] = "Аналитика";
                 });
 
                 if (targetQuestions.length === 0) {
-                    aiOutput.innerHTML = '<div class="text-success fw-bold d-flex align-items-center"><i class="bi bi-check-circle-fill fs-4 me-2"></i> Нет вопросов в красной зоне. Ручной выбор галочками также пуст.</div>';
+                    aiOutput.innerHTML = '<div class="text-success fw-bold d-flex align-items-center"><i class="bi bi-check-circle-fill fs-4 me-2"></i> Нет вопросов в красной зоне. Ручной выбор также пуст.</div>';
                     return;
                 }
             }
 
-            // Включаем красивую пульсирующую анимацию
             aiOutput.innerHTML = `
                 <div class="d-flex align-items-center mb-3">
                     <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
@@ -262,7 +267,6 @@ ViewData["Title"] = "Аналитика";
             `;
 
             try {
-                // Запускаем параллельно сетевой запрос и таймер на 900 миллисекунд (UX-задержка для плавности анимации)
                 const fetchPromise = fetch('/api/ai/recommendation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -275,16 +279,46 @@ ViewData["Title"] = "Аналитика";
                 });
 
                 const timerPromise = new Promise(resolve => setTimeout(resolve, 900));
-
-                // Ждем выполнения обоих условий (и запрос завершился, и анимация покрутилась минимум 0.9 сек)
                 const [response] = await Promise.all([fetchPromise, timerPromise]);
 
                 if (!response.ok) throw new Error(await response.text());
-
                 const resultText = await response.text();
-
-                // Плавно выводим результат
                 aiOutput.innerHTML = `<i class="bi bi-stars text-primary fs-5 mb-2 d-block"></i>${resultText}`;
+            } catch (error) {
+                aiOutput.innerHTML = `<div class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
+            }
+        }
+
+        async function sendCustomPrompt() {
+            const prompt = document.getElementById('customPrompt').value.trim();
+            if (!prompt) return alert("Введите текст запроса.");
+
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            const aiOutput = document.getElementById('ai-output');
+            aiOutput.innerHTML = `
+                <div class="d-flex align-items-center mb-3">
+                    <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status"></div>
+                    <span class="fw-semibold text-primary">Обдумываю ответ...</span>
+                </div>
+            `;
+
+            try {
+                const fetchPromise = fetch('/api/ai/custom', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        modelProvider: document.getElementById('modelSelect').value,
+                        apiKey: apiKey
+                    })
+                });
+
+                const timerPromise = new Promise(resolve => setTimeout(resolve, 900));
+                const [response] = await Promise.all([fetchPromise, timerPromise]);
+
+                if (!response.ok) throw new Error(await response.text());
+                const resultText = await response.text();
+                aiOutput.innerHTML = `<i class="bi bi-chat-left-text text-primary fs-5 mb-2 d-block"></i>${resultText}`;
             } catch (error) {
                 aiOutput.innerHTML = `<div class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}</div>`;
             }

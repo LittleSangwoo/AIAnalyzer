@@ -12,8 +12,8 @@ namespace AIAnalyzer.Services
 {
     public interface IAiService
     {
-        Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider);
-        Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider);
+        Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider, string userApiKey);
+        Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey);
     }
 
     public class AiService : IAiService
@@ -27,7 +27,7 @@ namespace AIAnalyzer.Services
             _configuration = configuration;
         }
 
-        public async Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider)
+        public async Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider, string userApiKey)
         {
             var sb = new StringBuilder();
             sb.AppendLine("Статистика проблемных вопросов:");
@@ -44,22 +44,21 @@ namespace AIAnalyzer.Services
                 _ => "Ты — аналитик. Проанализируй данные и дай советы."
             };
 
-            return await SendApiRequestAsync(systemPrompt, sb.ToString(), modelProvider.ToLower());
+            return await SendApiRequestAsync(systemPrompt, sb.ToString(), modelProvider.ToLower(), userApiKey);
         }
 
-        public async Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider)
+        public async Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey)
         {
             string systemPrompt = "Ты — помощник преподавателя и аналитик учебных курсов. Отвечай на вопросы пользователя профессионально, четко и с примерами.";
-            return await SendApiRequestAsync(systemPrompt, userPrompt, modelProvider.ToLower());
+            return await SendApiRequestAsync(systemPrompt, userPrompt, modelProvider.ToLower(), userApiKey);
         }
 
-        private async Task<string> SendApiRequestAsync(string systemPrompt, string userContent, string modelProvider)
+        private async Task<string> SendApiRequestAsync(string systemPrompt, string userContent, string modelProvider, string userApiKey)
         {
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd("AIAnalyzerApp/1.0");
 
-            // ИСПОЛЬЗУЕМ СТРОГИЙ ВЫБОР СЕКЦИИ
-            string section = modelProvider.ToLower() switch
+            string section = modelProvider switch
             {
                 "gigachat" => "GigaChat",
                 "groq" => "Groq",
@@ -67,51 +66,45 @@ namespace AIAnalyzer.Services
             };
 
             string apiUrl = _configuration[$"AiSettings:{section}:ApiUrl"];
-            string apiKey = _configuration[$"AiSettings:{section}:ApiKey"];
             string modelName = _configuration[$"AiSettings:{section}:ModelName"];
 
-            // Теперь, если ключа нет, мы получим понятную ошибку, а не NullReference
-            if (string.IsNullOrEmpty(apiKey))
-                return $"Ошибка: API Ключ для '{section}' пуст. Проверьте appsettings.json";
+            // Если ключ ввели на сайте — используем его. Иначе берем из appsettings.json
+            string finalApiKey = !string.IsNullOrWhiteSpace(userApiKey)
+                ? userApiKey
+                : _configuration[$"AiSettings:{section}:ApiKey"];
 
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey.Trim());
+            if (string.IsNullOrWhiteSpace(finalApiKey))
+                throw new InvalidOperationException($"Ключ API для '{section}' не передан в интерфейсе и не найден в настройках.");
+
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", finalApiKey.Trim());
 
             var requestBody = new
             {
                 model = modelName,
                 messages = new[]
                 {
-            new { role = "system", content = systemPrompt },
-            new { role = "user", content = userContent }
-        },
+                    new { role = "system", content = systemPrompt },
+                    new { role = "user", content = userContent }
+                },
                 temperature = 0.7
             };
 
-            var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json");
+            var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-            try
+            var response = await client.PostAsync(apiUrl, jsonContent);
+            var responseString = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+                throw new InvalidOperationException($"Ошибка API ({response.StatusCode}): {responseString}");
+
+            using var doc = JsonDocument.Parse(responseString);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
             {
-                var response = await client.PostAsync(apiUrl, jsonContent);
-                var responseString = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                    return $"Ошибка API ({response.StatusCode}): {responseString}";
-
-                using var doc = JsonDocument.Parse(responseString);
-
-                var root = doc.RootElement;
-                if (root.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
-                {
-                    return choices[0].GetProperty("message").GetProperty("content").GetString();
-                }
-
-                return "Ответ получен, но формат JSON не содержит данных 'choices'.";
+                return choices[0].GetProperty("message").GetProperty("content").GetString();
             }
-            catch (Exception ex)
-            {
-                return $"Ошибка выполнения запроса: {ex.Message}";
-            }
-        }
+
+            throw new InvalidOperationException("Ответ получен, но формат JSON не распознан.");
         }
     }
-    
+}
