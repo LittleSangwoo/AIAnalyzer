@@ -2,11 +2,17 @@
 
 # Этот этап используется при запуске из VS в быстром режиме (по умолчанию для конфигурации отладки)
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+# ВАЖНО: Visual Studio при сборке смотрит на проект из папки решения (на уровень выше),
+# поэтому добавляем префикс "AIAnalyzer/" к имени файла сертификата.
+COPY ["AIAnalyzer/Certificates/russian_trusted_root_ca.crt", "/usr/local/share/ca-certificates/russian_trusted_root_ca.crt"]
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+
+# Только ПОСЛЕ установки сертификатов переключаемся на безопасного пользователя
+USER $APP_UID
 
 # Этот этап используется для сборки проекта службы
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
