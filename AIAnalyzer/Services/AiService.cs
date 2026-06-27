@@ -13,13 +13,8 @@ namespace AIAnalyzer.Services
 {
     public interface IAiService
     {
-<<<<<<< HEAD
         Task<string> GenerateRecommendationAsync(List<QuestionStatDto> targetQuestions, string promptType, string modelProvider, string userApiKey);
         Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey);
-=======
-        Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider, string userApiKey, string customModelName = null);
-        Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey, string customModelName = null);
->>>>>>> 16c58496517c0b7e5c45f60cb278a929f31394a6
     }
 
     public class AiService : IAiService
@@ -33,7 +28,6 @@ namespace AIAnalyzer.Services
             _configuration = configuration;
         }
 
-<<<<<<< HEAD
         public async Task<string> GenerateRecommendationAsync(List<QuestionStatDto> targetQuestions, string promptType, string modelProvider, string userApiKey)
         {
             if (targetQuestions.Count <= 40 || promptType.ToLower() == "rewrite")
@@ -100,9 +94,6 @@ namespace AIAnalyzer.Services
         }
 
         private async Task<string> ProcessSingleBatchAsync(IEnumerable<QuestionStatDto> targetQuestions, string promptType, string modelProvider, string userApiKey)
-=======
-        public async Task<string> GenerateRecommendationAsync(List<QuestionStatDto> redZoneQuestions, string promptType, string modelProvider, string userApiKey, string customModelName = null)
->>>>>>> 16c58496517c0b7e5c45f60cb278a929f31394a6
         {
             var sb = new StringBuilder();
             sb.AppendLine("ДАННЫЕ:");
@@ -120,7 +111,7 @@ namespace AIAnalyzer.Services
             string systemPrompt = promptType.ToLower() switch
             {
                 // ДОБАВЛЕНА: Проверка ответов студентов на ошибки алгоритма СДО + сохранена твоя строчка про формат!
-                                "rewrite" => @"Ты — строгий методист и лингвист-тестолог. Твоя задача — не просто исправить вопросы, а найти ПРИЧИНУ массовых провалов.
+                "rewrite" => @"Ты — строгий методист и лингвист-тестолог. Твоя задача — не просто исправить вопросы, а найти ПРИЧИНУ массовых провалов.
                 Для КАЖДОГО вопроса:
                 1. Анализ провала: Сформулируй гипотезу. ВНИМАТЕЛЬНО проверь 'Ответы студентов' (если они переданы). Если студенты дают верный по смыслу ответ, но СДО его не засчитала (из-за регистра, опечатки, пробела или синонима), прямо укажи: 'Ошибка верификации СДО. Ответы студентов по сути верны'. Если таких ответов нет, укажи другую причину (сложная грамматическая конструкция, неясная формулировка).
                 2. Вердикт: Обязательно ли менять вопрос? (Например: 'Вопрос критически неисправен' или 'Требует перенастройки ответов в системе').
@@ -128,13 +119,13 @@ namespace AIAnalyzer.Services
 
                 Отвечай в формате таблицы или четкого списка с заголовками. Твоя цель — сделать тест проверяющим знания, а не умение разгадывать ребусы или угадывать регистр.",
 
-                                "course_redesign" => @"Ты — строгий методист. Посмотри на картину проваленных вопросов:
+                "course_redesign" => @"Ты — строгий методист. Посмотри на картину проваленных вопросов:
                 1. Какие темы студенты массово не понимают?
                 2. Где не хватает материалов или практики?
                 3. Дай 3-5 стратегических рекомендаций по курсу.
                 Отвечай структурировано, в Markdown.",
 
-                                "test_redesign" => @"Ты — специалист по оценке знаний. Перед тобой статистика провалов.
+                "test_redesign" => @"Ты — специалист по оценке знаний. Перед тобой статистика провалов.
                 Предложи, как изменить формат тестирования:
                 1. Стоит ли изменить тип проблемных вопросов?
                 2. Какие паттерны ошибок видны?
@@ -144,18 +135,13 @@ namespace AIAnalyzer.Services
                 _ => "Проанализируй статистику. Используй Markdown."
             };
 
-            return await SendApiRequestAsync(systemPrompt, sb.ToString(), modelProvider.ToLower(), userApiKey, customModelName);
+            return await SendApiRequestAsync(systemPrompt, sb.ToString(), modelProvider.ToLower(), userApiKey);
         }
 
-        public async Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey, string customModelName = null)
+        public async Task<string> ProcessCustomPromptAsync(string userPrompt, string modelProvider, string userApiKey)
         {
-<<<<<<< HEAD
             string systemPrompt = "Ты — умный помощник преподавателя и аналитик учебных курсов. Отвечай на вопросы пользователя профессионально, четко, по делу и с примерами. Обязательно используй Markdown (заголовки, списки, жирный текст) для удобства чтения.";
             return await SendApiRequestAsync(systemPrompt, userPrompt, modelProvider.ToLower(), userApiKey);
-=======
-            string systemPrompt = "Ты — помощник преподавателя и аналитик учебных курсов. Отвечай на вопросы пользователя профессионально, четко и с примерами.";
-            return await SendApiRequestAsync(systemPrompt, userPrompt, modelProvider.ToLower(), userApiKey, customModelName);
->>>>>>> 16c58496517c0b7e5c45f60cb278a929f31394a6
         }
 
         private async Task<string> SendApiRequestAsync(string systemPrompt, string userContent, string modelProvider, string userApiKey, string customModelName = null)
@@ -172,15 +158,6 @@ namespace AIAnalyzer.Services
 
             string apiUrl = _configuration[$"AiSettings:{section}:ApiUrl"];
             string modelName = _configuration[$"AiSettings:{section}:ModelName"];
-
-<<<<<<< HEAD
-=======
-            // Приоритет отдается пользовательской модели, если она не пустая
-            string finalModelName = !string.IsNullOrWhiteSpace(customModelName)
-                ? customModelName
-                : _configuration[$"AiSettings:{section}:ModelName"];
-
->>>>>>> 16c58496517c0b7e5c45f60cb278a929f31394a6
             string finalApiKey = !string.IsNullOrWhiteSpace(userApiKey)
                 ? userApiKey
                 : _configuration[$"AiSettings:{section}:ApiKey"];
@@ -193,7 +170,7 @@ namespace AIAnalyzer.Services
 
             var requestBody = new
             {
-                model = finalModelName,
+                model = modelName,
                 messages = new[]
                 {
                     new { role = "system", content = systemPrompt },
