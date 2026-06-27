@@ -4,6 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddSingleton<LlmSettingsService>();
 
 // Подключаем провайдер кодировок для поддержки русского Excel (Windows-1251)
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
