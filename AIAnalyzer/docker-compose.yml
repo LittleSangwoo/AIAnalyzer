@@ -1,0 +1,22 @@
+﻿version: '3.8'
+
+services:
+  # Первый контейнер: Твое веб-приложение
+  analyzer-web:
+    build:
+      context: ..
+      dockerfile: AIAnalyzer/Dockerfile
+    ports:
+      - "8080:8080"
+
+  # Второй контейнер: Локальный сервер ИИ (Ollama)
+  ollama-server:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama # Сохраняет скачанную модель, чтобы не качать ее каждый раз при перезапуске
+
+# Выделяем место на жестком диске под базу ИИ
+volumes:
+  ollama_data:

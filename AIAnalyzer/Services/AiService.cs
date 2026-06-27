@@ -153,6 +153,7 @@ namespace AIAnalyzer.Services
             {
                 "gigachat" => "GigaChat",
                 "groq" => "Groq",
+                "local" => "LocalAI", // Направляем на новую секцию в appsettings.json
                 _ => throw new InvalidOperationException($"Провайдер '{modelProvider}' не настроен в системе.")
             };
 
@@ -168,12 +169,15 @@ namespace AIAnalyzer.Services
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", finalApiKey.Trim());
 
+            // Добавляем принудительное требование русского языка к любому системному промпту
+            string forcedSystemPrompt = $"{systemPrompt} Твой язык общения — русский. Все ответы, рекомендации и заголовки должны быть на русском языке.";
+
             var requestBody = new
             {
                 model = modelName,
                 messages = new[]
                 {
-                    new { role = "system", content = systemPrompt },
+                    new { role = "system", content = forcedSystemPrompt },
                     new { role = "user", content = userContent }
                 },
                 temperature = 0.5
