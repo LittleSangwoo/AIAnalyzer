@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace AIAnalyzer.Services
 {
-    // Этот интерфейс как раз ищет твой AiController!
+    // Этот интерфейс ищет AiController
     public interface IReportService
     {
         byte[] GenerateExcelReport(List<QuestionStatDto> questions, string aiRecommendation);
@@ -23,17 +23,17 @@ namespace AIAnalyzer.Services
 
             var mainHeaderCell = wsStats.Cell("A1");
             mainHeaderCell.Value = "Анализ результатов тестирования (Светофор)";
-            mainHeaderCell.Style.Font.SetBold(true);               // ИСПРАВЛЕНО
-            mainHeaderCell.Style.Font.SetFontSize(16);             // ИСПРАВЛЕНО
-            mainHeaderCell.Style.Font.SetFontColor(XLColor.FromHtml("#1F497D")); // ИСПРАВЛЕНО
+            mainHeaderCell.Style.Font.SetBold(true);               
+            mainHeaderCell.Style.Font.SetFontSize(16);             
+            mainHeaderCell.Style.Font.SetFontColor(XLColor.FromHtml("#1F497D")); 
 
             string[] headers = { "ID Вопроса", "Текст вопроса", "Правильные ответы", "Количество ошибок", "Зона опасности" };
             for (int i = 0; i < headers.Length; i++)
             {
                 var cell = wsStats.Cell(3, i + 1);
                 cell.Value = headers[i];
-                cell.Style.Font.SetBold(true);                     // ИСПРАВЛЕНО
-                cell.Style.Font.SetFontColor(XLColor.White);       // ИСПРАВЛЕНО
+                cell.Style.Font.SetBold(true);                     
+                cell.Style.Font.SetFontColor(XLColor.White);       
                 cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#2F3542");
                 cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
@@ -49,23 +49,23 @@ namespace AIAnalyzer.Services
 
                 var zoneCell = wsStats.Cell(currentRow, 5);
                 zoneCell.Value = q.Zone.ToString();
-                zoneCell.Style.Font.SetBold(true);                 // ИСПРАВЛЕНО
+                zoneCell.Style.Font.SetBold(true);                 
                 zoneCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
                 if (q.Zone == ErrorZone.Red || q.ErrorsCount >= 6)
                 {
                     zoneCell.Style.Fill.BackgroundColor = XLColor.FromHtml("#FFD2D2");
-                    zoneCell.Style.Font.SetFontColor(XLColor.DarkRed); // ИСПРАВЛЕНО
+                    zoneCell.Style.Font.SetFontColor(XLColor.DarkRed); 
                 }
                 else if (q.Zone == ErrorZone.Yellow || (q.ErrorsCount >= 4 && q.ErrorsCount < 6))
                 {
                     zoneCell.Style.Fill.BackgroundColor = XLColor.FromHtml("#FFEAA7");
-                    zoneCell.Style.Font.SetFontColor(XLColor.FromHtml("#D35400")); // ИСПРАВЛЕНО
+                    zoneCell.Style.Font.SetFontColor(XLColor.FromHtml("#D35400")); 
                 }
                 else
                 {
                     zoneCell.Style.Fill.BackgroundColor = XLColor.FromHtml("#D4EDDA");
-                    zoneCell.Style.Font.SetFontColor(XLColor.DarkGreen); // ИСПРАВЛЕНО
+                    zoneCell.Style.Font.SetFontColor(XLColor.DarkGreen); 
                 }
 
                 for (int i = 1; i <= headers.Length; i++)
@@ -85,9 +85,9 @@ namespace AIAnalyzer.Services
 
             var aiHeaderCell = wsAi.Cell("A1");
             aiHeaderCell.Value = "Заключение искусственного интеллекта";
-            aiHeaderCell.Style.Font.SetBold(true);                 // ИСПРАВЛЕНО
-            aiHeaderCell.Style.Font.SetFontSize(14);               // ИСПРАВЛЕНО
-            aiHeaderCell.Style.Font.SetFontColor(XLColor.FromHtml("#1F497D")); // ИСПРАВЛЕНО
+            aiHeaderCell.Style.Font.SetBold(true);                 
+            aiHeaderCell.Style.Font.SetFontSize(14);               
+            aiHeaderCell.Style.Font.SetFontColor(XLColor.FromHtml("#1F497D")); 
 
             var reportRange = wsAi.Range("A3:H25");
             var mainCell = reportRange.FirstCell();
@@ -98,7 +98,7 @@ namespace AIAnalyzer.Services
 
             mainCell.Style.Alignment.WrapText = true;
             mainCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
-            mainCell.Style.Font.SetFontSize(11);                   // ИСПРАВЛЕНО
+            mainCell.Style.Font.SetFontSize(11);                   
 
             reportRange.Merge();
             reportRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;

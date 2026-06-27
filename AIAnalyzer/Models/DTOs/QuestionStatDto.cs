@@ -11,7 +11,7 @@ namespace AIAnalyzer.Models.DTOs
         public ErrorZone Zone { get; set; }
         public List<string>? SampleAnswers { get; set; }
 
-        // Оставляем поле для напарницы, куда её ИИ-сервис запишет ответ
+        // ии пишет ответ
         public string? AiRecommendation { get; set; }
         public int TotalAttempts => CorrectCount + ErrorsCount;
         public double ErrorPercentage => TotalAttempts == 0 ? 0 : Math.Round((double)ErrorsCount / TotalAttempts * 100, 2);

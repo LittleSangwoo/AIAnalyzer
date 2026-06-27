@@ -8,14 +8,14 @@ builder.Services.AddControllersWithViews();
 // Подключаем провайдер кодировок для поддержки русского Excel (Windows-1251)
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-// 1. Добавляем фабрику HttpClient (нужна для твоих ИИ-запросов)
+// 1. Добавляем HttpClient (нужна для ИИ-запросов)
 builder.Services.AddHttpClient();
 
 // Регистрация сервисов
-builder.Services.AddScoped<ITestAnalysisService, TestAnalysisService>(); // Сервис напарницы
-builder.Services.AddScoped<IReportService, ReportService>();             // Твой сервис Excel
+builder.Services.AddScoped<ITestAnalysisService, TestAnalysisService>(); 
+builder.Services.AddScoped<IReportService, ReportService>();             
 
-// 2. ДОБАВЬ ЭТУ СТРОЧКУ: Регистрация твоего ИИ-сервиса
+// 2. Регистрация ИИ-сервиса
 builder.Services.AddScoped<IAiService, AiService>();
 
 var app = builder.Build();

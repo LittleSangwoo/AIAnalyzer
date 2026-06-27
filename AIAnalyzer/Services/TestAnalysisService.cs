@@ -105,7 +105,7 @@ namespace AIAnalyzer.Services
                 }
             }
 
-            // ОСТАЛЬНАЯ ЧАСТЬ КОДА БЕЗ ИЗМЕНЕНИЙ (Расчет процентов и зон)
+            // Расчет процентов и зон
             result.TotalStudentsAnalyzed = processedStudents.Count;
             double totalErrorPercentage = 0;
             int validQuestionsCount = 0;
@@ -172,7 +172,7 @@ namespace AIAnalyzer.Services
             }
             else
             {
-                // Для CSV это всегда одна таблица
+                
                 var csvRows = new List<string[]>();
                 using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
                 string? line;

@@ -19,7 +19,6 @@ namespace AIAnalyzer.Controllers
 
 
         [HttpPost("upload")]
-        // Убрали IFormFile etalonFile, поменяли answersFile на массив List<IFormFile>
         public IActionResult UploadFiles([FromForm] List<IFormFile> answersFiles)
         {
             if (answersFiles == null || answersFiles.Count == 0)
