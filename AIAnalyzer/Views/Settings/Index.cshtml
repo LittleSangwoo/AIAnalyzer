@@ -1,0 +1,160 @@
+﻿@{
+    ViewData["Title"] = "Настройки провайдеров ИИ";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="mb-0">Управление провайдерами нейросетей</h2>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-arrow-left"></i> Назад
+        </a>
+    </div>
+    <p class="text-muted">Настройки применяются глобально для всех сессий аналитики.</p>
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">Добавить новую нейросеть</h5>
+            <form id="providerForm">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Название подключения</label>
+                        <input type="text" id="pName" class="form-control" placeholder="например, Локальная Llama 3" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Тип размещения</label>
+                        <select id="pIsLocal" class="form-select" onchange="toggleApiKeyField()">
+                            <option value="true">Локальная сеть (Ollama)</option>
+                            <option value="false">Облачное API (Groq / Cloud)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Имя модели (в Ollama/API)</label>
+                        <input type="text" id="pModelName" class="form-control" placeholder="например, llama3" required>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Адрес API (Endpoint URL)</label>
+                        <input type="url" id="pApiUrl" class="form-control" placeholder="http://127.0.0.1:11434/v1/chat/completions" required>
+                    </div>
+                    <div class="col-md-4" id="apiKeyContainer" style="display: none;">
+                        <label class="form-label">API Ключ</label>
+                        <input type="password" id="pApiKey" class="form-control" placeholder="sk-...">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">Добавить провайдера</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">Добавленные конфигурации</h5>
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Тип</th>
+                            <th>Модель</th>
+                            <th>Адрес API</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="providersTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Функция скрытия/показа поля API-ключа в зависимости от выбора типа
+        function toggleApiKeyField() {
+            const isLocal = document.getElementById("pIsLocal").value === "true";
+            const container = document.getElementById("apiKeyContainer");
+            const apiKeyInput = document.getElementById("pApiKey");
+            
+            if (isLocal) {
+                container.style.display = "none";
+                apiKeyInput.removeAttribute("required");
+                apiKeyInput.value = "";
+            } else {
+                container.style.display = "block";
+                apiKeyInput.setAttribute("required", "required");
+            }
+        }
+
+        // Загрузка списка провайдеров при старте страницы
+        async function loadProviders() {
+            const response = await fetch('/Settings/GetProviders');
+            const providers = await response.json();
+            const tbody = document.getElementById("providersTableBody");
+            tbody.innerHTML = "";
+
+            if(providers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Провайдеры не настроены. Добавьте первый сервер выше.</td></tr>`;
+                return;
+            }
+
+            providers.forEach(p => {
+                const badge = p.isLocal ? '<span class="badge bg-success">Локальный</span>' : '<span class="badge bg-info text-dark">Облако</span>';
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${p.name}</strong></td>
+                        <td>${badge}</td>
+                        <td><code>${p.modelName}</code></td>
+                        <td class="text-muted small">${p.apiUrl}</td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProvider('${p.id}')">Удалить</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Обработка отправки формы (Добавление)
+        document.getElementById("providerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const providerData = {
+                name: document.getElementById("pName").value,
+                isLocal: document.getElementById("pIsLocal").value === "true",
+                modelName: document.getElementById("pModelName").value,
+                apiUrl: document.getElementById("pApiUrl").value,
+                apiKey: document.getElementById("pApiKey").value
+            };
+
+            const response = await fetch('/Settings/AddProvider', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(providerData)
+            });
+
+            if (response.ok) {
+                document.getElementById("providerForm").reset();
+                toggleApiKeyField();
+                await loadProviders(); // Перерисовываем таблицу
+            } else {
+                alert("Ошибка при сохранении провайдера");
+            }
+        });
+
+        // Функция удаления
+        async function deleteProvider(id) {
+            if (!confirm("Вы уверены, что хотите удалить эту конфигурацию?")) return;
+
+            const response = await fetch(`/Settings/DeleteProvider?id=${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                await loadProviders();
+            } else {
+                alert("Ошибка при удалении");
+            }
+        }
+
+        // Инициализация страницы
+        document.addEventListener("DOMContentLoaded", loadProviders);
+    </script>
+}
