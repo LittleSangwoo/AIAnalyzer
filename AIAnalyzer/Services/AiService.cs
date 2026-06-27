@@ -28,6 +28,35 @@ namespace AIAnalyzer.Services
             _configuration = configuration;
         }
 
+        private async Task<string> GetSberAccessTokenAsync()
+        {
+            var client = _httpClientFactory.CreateClient();
+
+            // Сбер требует уникальный UUID для каждого запроса на авторизацию
+            client.DefaultRequestHeaders.Add("RqUID", Guid.NewGuid().ToString());
+
+            // Берем ключ авторизации из конфига
+            string authKey = _configuration["AiSettings:GigaChat:AuthorizationKey"];
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authKey);
+
+            var content = new FormUrlEncodedContent(new[]
+             {
+                new KeyValuePair<string, string>("scope", "GIGACHAT_API_PERS")
+            });
+
+            string authUrl = _configuration["AiSettings:GigaChat:AuthUrl"];
+            var response = await client.PostAsync(authUrl, content);
+            var responseString = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException($"Не удалось получить токен Сбера: {responseString}");
+            }
+
+            using var doc = JsonDocument.Parse(responseString);
+            return doc.RootElement.GetProperty("access_token").GetString();
+        }
+
         public async Task<string> GenerateRecommendationAsync(List<QuestionStatDto> targetQuestions, string promptType, string modelProvider, string userApiKey)
         {
             if (targetQuestions.Count <= 40 || promptType.ToLower() == "rewrite")
@@ -48,7 +77,7 @@ namespace AIAnalyzer.Services
                 {
                     sb.AppendLine($"- [{q.QuestionId}] \"{q.QuestionText}\" | Ошибок: {q.ErrorPercentage}% ({q.ErrorsCount} нев., {q.CorrectCount} вер.)");
 
-                    // ДОБАВЛЕНО: Передаем ответы студентов для анализа, если они есть
+                    // Передаем ответы студентов для анализа, если они есть
                     if (q.SampleAnswers != null && q.SampleAnswers.Any())
                     {
                         sb.AppendLine($"  Ответы студентов: {string.Join(", ", q.SampleAnswers.Take(10))}");
@@ -81,7 +110,7 @@ namespace AIAnalyzer.Services
 
                 "test_redesign" => @"Ты — специалист по оценке знаний. Перед тобой собранные выводы по провалам в тесте.
 Предложи, как изменить формат тестирования:
-1. Какие паттерны ошибок видны во всем тесте?
+1. Какие паттерны ошибок вид во всем тесте?
 2. Как сбалансировать тест и типы вопросов?
 Отвечай структурировано, в Markdown.",
 
@@ -101,7 +130,7 @@ namespace AIAnalyzer.Services
             {
                 sb.AppendLine($"- [{q.QuestionId}] \"{q.QuestionText}\" | Ошибок: {q.ErrorPercentage}% ({q.ErrorsCount} нев., {q.CorrectCount} вер.)");
 
-                // ДОБАВЛЕНО: Передаем ответы студентов
+                // Передаем ответы студентов
                 if (q.SampleAnswers != null && q.SampleAnswers.Any())
                 {
                     sb.AppendLine($"  Ответы студентов: {string.Join(", ", q.SampleAnswers.Take(10))}");
@@ -110,7 +139,6 @@ namespace AIAnalyzer.Services
 
             string systemPrompt = promptType.ToLower() switch
             {
-                // ДОБАВЛЕНА: Проверка ответов студентов на ошибки алгоритма СДО + сохранена твоя строчка про формат!
                 "rewrite" => @"Ты — строгий методист и лингвист-тестолог. Твоя задача — не просто исправить вопросы, а найти ПРИЧИНУ массовых провалов.
                 Для КАЖДОГО вопроса:
                 1. Анализ провала: Сформулируй гипотезу. ВНИМАТЕЛЬНО проверь 'Ответы студентов' (если они переданы). Если студенты дают верный по смыслу ответ, но СДО его не засчитала (из-за регистра, опечатки, пробела или синонима), прямо укажи: 'Ошибка верификации СДО. Ответы студентов по сути верны'. Если таких ответов нет, укажи другую причину (сложная грамматическая конструкция, неясная формулировка).
@@ -144,7 +172,7 @@ namespace AIAnalyzer.Services
             return await SendApiRequestAsync(systemPrompt, userPrompt, modelProvider.ToLower(), userApiKey);
         }
 
-        private async Task<string> SendApiRequestAsync(string systemPrompt, string userContent, string modelProvider, string userApiKey, string customModelName = null)
+        private async Task<string> SendApiRequestAsync(string systemPrompt, string userContent, string modelProvider, string userApiKey)
         {
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd("AIAnalyzerApp/1.0");
@@ -158,10 +186,24 @@ namespace AIAnalyzer.Services
 
             string apiUrl = _configuration[$"AiSettings:{section}:ApiUrl"];
             string modelName = _configuration[$"AiSettings:{section}:ModelName"];
-            string finalApiKey = !string.IsNullOrWhiteSpace(userApiKey)
-                ? userApiKey
-                : _configuration[$"AiSettings:{section}:ApiKey"];
 
+            // 1. Берем ключ, который ввели на сайте
+            string finalApiKey = userApiKey;
+
+            // 2. Если на сайте пусто, решаем, откуда брать ключ
+            if (string.IsNullOrWhiteSpace(finalApiKey))
+            {
+                if (modelProvider.ToLower() == "gigachat")
+                {
+                    // Идем за свежим токеном в Сбер
+                    finalApiKey = await GetSberAccessTokenAsync();
+                }
+                else
+                {
+                    // Берем постоянный ключ из appsettings
+                    finalApiKey = _configuration[$"AiSettings:{section}:ApiKey"];
+                }
+            }
 
             if (string.IsNullOrWhiteSpace(finalApiKey))
                 throw new InvalidOperationException($"Ключ API для '{section}' не передан в интерфейсе и не найден в настройках.");
