@@ -190,7 +190,38 @@
         }
 
         .btn-header-settings:hover i {
-            transform: rotate(45deg); /* Интерактивная микро-анимация иконки шестеренки/слайдера */
+            transform: rotate(180deg); /* Интерактивная микро-анимация иконки шестеренки/слайдера */
+        }
+
+    /* ── Адаптация кнопки "Настройки ИИ" под белую тему ── */
+    [data-bs-theme="light"] .btn-header-settings,
+    body[data-theme="light"] .btn-header-settings {
+        background: rgba(0, 0, 0, 0.04) !important;
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        color: #475569 !important; /* Глубокий серо-синий */
+    }
+
+        [data-bs-theme="light"] .btn-header-settings:hover,
+        body[data-theme="light"] .btn-header-settings:hover {
+            background: rgba(139, 92, 246, 0.08) !important;
+            border-color: #8b5cf6 !important;
+            color: #7c3aed !important;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15) !important;
+        }
+
+    /* ── Адаптация модального окна "Как пользоваться" ── */
+    [data-bs-theme="light"] .modal-header,
+    body[data-theme="light"] .modal-header {
+        /* Фиксируем градиент, чтобы он не пропадал в белой теме */
+        background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+        border-bottom: none !important;
+    }
+
+        [data-bs-theme="light"] .modal-header .modal-title,
+        [data-bs-theme="light"] .modal-header .bi,
+        body[data-theme="light"] .modal-header .modal-title {
+            /* Принудительно делаем текст заголовка белым, чтобы он не сливался */
+            color: #ffffff !important;
         }
 
     /* ── Thinking indicator ── */

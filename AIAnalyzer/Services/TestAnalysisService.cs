@@ -116,8 +116,8 @@ namespace AIAnalyzer.Services
                 {
                     stat.Zone = stat.ErrorPercentage switch
                     {
-                        >= 50 => ErrorZone.Red,
-                        >= 30 => ErrorZone.Yellow,
+                        >= 60 => ErrorZone.Red,
+                        >= 40 => ErrorZone.Yellow,
                         _ => ErrorZone.Green
                     };
 
