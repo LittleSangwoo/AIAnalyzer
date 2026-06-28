@@ -1,0 +1,26 @@
+[
+  {
+    "Id": "cb2f6637-7932-4d9c-bb73-f0546d4fe313",
+    "Name": "mjngbjk",
+    "IsLocal": true,
+    "ApiUrl": "http://127.0.0.1:11434/v1/chat/completions",
+    "ModelName": "hjgkuik",
+    "ApiKey": ""
+  },
+  {
+    "Id": "234e2493-4f0f-45c8-9f52-8372424241e7",
+    "Name": "groq",
+    "IsLocal": false,
+    "ApiUrl": "https://api.groq.com/openai/v1/chat/completions",
+    "ModelName": "llama-3.3-70b-versatile",
+    "ApiKey": "-"
+  },
+    {
+        "Id": "0857b072-447c-444e-ab34-e939ae22075c",
+        "Name": "ollama local",
+        "IsLocal": true,
+        "ApiUrl": "http://127.0.0.1:11434/v1/chat/completions",
+        "ModelName": "my-llama",
+        "ApiKey": "ollama"
+    }
+]

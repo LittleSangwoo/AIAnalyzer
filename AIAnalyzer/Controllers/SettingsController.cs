@@ -4,8 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AIAnalyzer.Controllers
 {
+    [Route("Settings")]
     public class SettingsController : Controller
     {
+        [HttpGet("")] // Это метод для получения страницы (Index)
+        public IActionResult Index()
+        {
+            return View();
+        }
         private readonly LlmSettingsService _llmService;
 
         public SettingsController(LlmSettingsService llmService)
@@ -14,14 +20,14 @@ namespace AIAnalyzer.Controllers
         }
 
         // Возвращает список для отображения в интерфейсе
-        [HttpGet]
+        [HttpGet("GetProviders")]
         public IActionResult GetProviders()
         {
             return Json(_llmService.GetAllProviders());
         }
 
         // Принимает данные с формы добавления
-        [HttpPost]
+        [HttpPost("AddProvider")]
         public IActionResult AddProvider([FromBody] LlmProvider provider)
         {
             _llmService.AddProvider(provider);
@@ -29,7 +35,7 @@ namespace AIAnalyzer.Controllers
         }
 
         // Удаляет по ID
-        [HttpDelete]
+        [HttpDelete("DeleteProvider")]
         public IActionResult DeleteProvider(string id)
         {
             _llmService.DeleteProvider(id);

@@ -305,17 +305,13 @@
                                         id="modelDropdown" data-bs-toggle="dropdown" aria-expanded="false"
                                         style="border-radius: 20px; font-size: 0.78rem; background-color: var(--app-surface-hover); color: inherit;">
                                     <i class="bi bi-cpu text-primary me-1"></i>
-                                    <span id="selectedModelText">Groq (Llama 3)</span>
+                                    <span id="selectedModelText">Загрузка...</span>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="modelDropdown"
+                                <ul id="dynamicModelList" class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="modelDropdown"
                                     style="border-radius: 12px; font-size: 0.85rem; background-color: var(--app-surface-hover);">
-                                    <li><a class="dropdown-item model-select-item active" href="#" data-val="groq">Groq (Llama 3)</a></li>
-                                    <li><a class="dropdown-item model-select-item" href="#" data-val="gigachat">GigaChat Pro</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item model-select-item fw-bold text-success" href="#" data-val="local"><i class="bi bi-pc-display me-2"></i>Локальная сеть (LM Studio)</a></li>
+                                    <li><span class="dropdown-item text-muted">Загрузка ИИ...</span></li>
                                 </ul>
-                                </ul>
-                                <input type="hidden" id="modelSelect" value="groq">
+                                <input type="hidden" id="modelSelect" value="">
                             </div>
                         </div>
                     </div>
@@ -484,6 +480,66 @@
             });
         }
 
+        async function loadModelDropdown() {
+    try {
+        // Обращаемся к тому же методу, который сделали для страницы настроек
+        const response = await fetch('/Settings/GetProviders');
+        if (!response.ok) throw new Error('Ошибка сети');
+
+        const providers = await response.json();
+        const dropdown = document.getElementById('dynamicModelList');
+        if (!dropdown) return;
+
+        dropdown.innerHTML = ''; // Очищаем "Загрузка..."
+
+        if (providers.length === 0) {
+            dropdown.innerHTML = '<li><span class="dropdown-item text-muted">Нет настроенных ИИ. Добавьте их в настройках.</span></li>';
+            document.getElementById('selectedModelText').innerText = "Не выбрано";
+            return;
+        }
+
+        providers.forEach((p, index) => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            
+            // Первый элемент делаем активным по умолчанию
+            const isActive = index === 0 ? ' active fw-bold' : '';
+            a.className = `dropdown-item model-select-item${isActive}`;
+            a.href = '#';
+            a.setAttribute('data-val', p.name); // Или p.id, смотря что вы передаете в AIController
+            
+            // Если ИИ локальный, добавляем иконку и зеленый цвет (как было в вашей верстке)
+            if (p.isLocal) {
+                a.classList.add('text-success', 'fw-bold');
+                a.innerHTML = `<i class="bi bi-pc-display me-2"></i>${p.name}`;
+            } else {
+                a.innerHTML = p.name;
+            }
+
+            // Обработчик клика для выбора модели
+            a.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.model-select-item').forEach(el => el.classList.remove('active', 'fw-bold'));
+                this.classList.add('active', 'fw-bold');
+                
+                document.getElementById('modelSelect').value = this.getAttribute('data-val');
+                document.getElementById('selectedModelText').innerText = this.innerText;
+            });
+
+            li.appendChild(a);
+            dropdown.appendChild(li);
+
+            // Устанавливаем текст кнопки для первого (активного) элемента при загрузке
+            if (index === 0) {
+                document.getElementById('modelSelect').value = p.name;
+                document.getElementById('selectedModelText').innerText = a.innerText;
+            }
+        });
+    } catch (error) {
+        console.error("Не удалось загрузить список ИИ:", error);
+    }
+}
+
         // ── Chat history ───────────────────────────────────────────────
         const LABEL_MAP = {
             rewrite:         '✏️ Улучшить текст',
@@ -572,15 +628,7 @@
 
             document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 
-            document.querySelectorAll('.model-select-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    document.querySelectorAll('.model-select-item').forEach(el => el.classList.remove('active', 'fw-bold'));
-                    this.classList.add('active', 'fw-bold');
-                    document.getElementById('modelSelect').value = this.getAttribute('data-val');
-                    document.getElementById('selectedModelText').innerText = this.innerText;
-                });
-            });
+        loadModelDropdown();
 
             document.getElementById('answersFiles').addEventListener('change', function(e) {
                 selectedFiles = selectedFiles.concat(Array.from(e.target.files));
