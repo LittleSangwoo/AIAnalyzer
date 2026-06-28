@@ -23,8 +23,6 @@ namespace AIAnalyzer.Services
             int columnStride = 4;
             var processedStudents = new HashSet<string>();
 
-            // ШАГ 1: Извлекаем все "таблицы". 
-            // 1 CSV = 1 таблица. 1 многостраничный XLSX = Несколько таблиц.
             var allTables = new List<List<string[]>>();
 
             foreach (var file in answersData)
@@ -32,10 +30,9 @@ namespace AIAnalyzer.Services
                 allTables.AddRange(ExtractTables(file.stream, file.fileName));
             }
 
-            // ШАГ 2: Обрабатываем каждую таблицу (каждый лист) независимо
             foreach (var rows in allTables)
             {
-                if (rows.Count < 2) continue; // Пропускаем пустые листы
+                if (rows.Count < 2) continue; 
 
                 var headers = rows[0];
                 var currentFileQuestions = new Dictionary<int, string>();
@@ -60,7 +57,6 @@ namespace AIAnalyzer.Services
                     }
                 }
 
-                // Обработка ответов (начинаем со 2-й строки текущего листа)
                 for (int r = 1; r < rows.Count; r++)
                 {
                     var row = rows[r];
@@ -105,7 +101,6 @@ namespace AIAnalyzer.Services
                 }
             }
 
-            // ОСТАЛЬНАЯ ЧАСТЬ КОДА БЕЗ ИЗМЕНЕНИЙ (Расчет процентов и зон)
             result.TotalStudentsAnalyzed = processedStudents.Count;
             double totalErrorPercentage = 0;
             int validQuestionsCount = 0;
@@ -149,7 +144,6 @@ namespace AIAnalyzer.Services
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 using var reader = ExcelReaderFactory.CreateReader(stream);
 
-                // Читаем Excel, пока не закончатся листы (вкладки)
                 do
                 {
                     var currentSheetRows = new List<string[]>();
@@ -165,14 +159,13 @@ namespace AIAnalyzer.Services
 
                     if (currentSheetRows.Count > 0)
                     {
-                        yield return currentSheetRows; // Возвращаем собранный лист
+                        yield return currentSheetRows;
                     }
                 }
-                while (reader.NextResult()); // Переходим к следующему листу, если он есть
+                while (reader.NextResult()); 
             }
             else
             {
-                // Для CSV это всегда одна таблица
                 var csvRows = new List<string[]>();
                 using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
                 string? line;

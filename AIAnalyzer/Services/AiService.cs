@@ -33,10 +33,8 @@ namespace AIAnalyzer.Services
         {
             var client = _httpClientFactory.CreateClient();
 
-            // Сбер требует уникальный UUID для каждого запроса на авторизацию
             client.DefaultRequestHeaders.Add("RqUID", Guid.NewGuid().ToString());
 
-            // Берем ключ авторизации из конфига
             string authKey = _configuration["AiSettings:GigaChat:AuthorizationKey"];
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authKey);
 
@@ -78,7 +76,6 @@ namespace AIAnalyzer.Services
                 {
                     sb.AppendLine($"- [{q.QuestionId}] \"{q.QuestionText}\" | Ошибок: {q.ErrorPercentage}% ({q.ErrorsCount} нев., {q.CorrectCount} вер.)");
 
-                    // Передаем ответы студентов для анализа, если они есть
                     if (q.SampleAnswers != null && q.SampleAnswers.Any())
                     {
                         sb.AppendLine($"  Ответы студентов: {string.Join(", ", q.SampleAnswers.Take(10))}");
@@ -131,7 +128,6 @@ namespace AIAnalyzer.Services
             {
                 sb.AppendLine($"- [{q.QuestionId}] \"{q.QuestionText}\" | Ошибок: {q.ErrorPercentage}% ({q.ErrorsCount} нев., {q.CorrectCount} вер.)");
 
-                // Передаем ответы студентов
                 if (q.SampleAnswers != null && q.SampleAnswers.Any())
                 {
                     sb.AppendLine($"  Ответы студентов: {string.Join(", ", q.SampleAnswers.Take(10))}");
@@ -183,14 +179,12 @@ namespace AIAnalyzer.Services
             string finalApiKey = userApiKey;
             bool isGigaChat = false;
 
-            // 1. УМНЫЙ ПОИСК: Сначала ищем провайдера в твоем динамическом файле llm_providers.json
             string providersFilePath = "llm_providers.json";
             if (File.Exists(providersFilePath))
             {
                 var jsonText = System.IO.File.ReadAllText(providersFilePath);
                 var providers = JsonSerializer.Deserialize<List<LlmProvider>>(jsonText);
 
-                // Ищем совпадение по имени провайдера (которое пришло с веб-интерфейса)
                 var provider = providers?.FirstOrDefault(p => p.Name == modelProvider || p.Id == modelProvider);
                 if (provider != null)
                 {
@@ -200,13 +194,11 @@ namespace AIAnalyzer.Services
                     if (string.IsNullOrWhiteSpace(finalApiKey))
                         finalApiKey = provider.ApiKey;
 
-                    // Проверяем, не Сбер ли это (ему нужна особая авторизация)
                     if (provider.Name.ToLower().Contains("gigachat") || apiUrl.Contains("sberbank"))
                         isGigaChat = true;
                 }
             }
 
-            // 2. РЕЗЕРВНЫЙ ПОИСК: Если в JSON не нашли, используем старый способ из appsettings.json
             if (string.IsNullOrEmpty(apiUrl))
             {
                 string section = modelProvider.ToLower() switch
@@ -226,13 +218,11 @@ namespace AIAnalyzer.Services
                 if (section == "GigaChat") isGigaChat = true;
             }
 
-            // 3. Авторизация Сбера (получаем динамический токен)
             if (isGigaChat && (string.IsNullOrWhiteSpace(finalApiKey) || finalApiKey == "-"))
             {
                 finalApiKey = await GetSberAccessTokenAsync();
             }
 
-            // Если ключ всё ещё пустой (например для локальной Олламы), ставим заглушку, чтобы код не падал
             if (string.IsNullOrWhiteSpace(finalApiKey))
             {
                 finalApiKey = "no-key-required";
@@ -240,7 +230,6 @@ namespace AIAnalyzer.Services
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", finalApiKey.Trim());
 
-            // Защита языка
             string forcedSystemPrompt = $"{systemPrompt} Твой язык общения — русский. Все ответы, рекомендации и заголовки должны быть на русском языке.";
 
             var requestBody = new

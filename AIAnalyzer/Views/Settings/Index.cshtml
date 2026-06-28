@@ -5,7 +5,6 @@
 <style>
     @@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-    /* ── ЦВЕТОВЫЕ ПЕРЕМЕННЫЕ (ПО УМОЛЧАНИЮ - ТЕМНАЯ ТЕМА) ── */
     :root {
         --set-bg: #0f172a;
         --set-card: #1e293b;
@@ -22,7 +21,6 @@
         --set-switch-bg: rgba(255, 255, 255, 0.1);
     }
 
-    /* ── ПЕРЕОПРЕДЕЛЕНИЕ ПЕРЕМЕННЫХ ДЛЯ БЕЛОЙ ТЕМЫ ── */
     [data-bs-theme="light"], body[data-theme="light"] {
         --set-bg: #f8fafc;
         --set-card: #ffffff;
@@ -131,7 +129,6 @@
         transform: translateX(4px);
     }
 
-    /* Принудительная окраска текста внутри карточек провайдеров */
     .provider-item-card .fw-bold { color: var(--set-text) !important; }
     .provider-item-card .text-muted { color: var(--set-text-muted) !important; }
 
@@ -144,7 +141,6 @@
         letter-spacing: 0.03em;
     }
     
-    /* Цвета бейджей адаптированы под светлую/темную тему */
     .badge-local { background: rgba(34, 197, 94, 0.1); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.2); }
     .badge-cloud { background: rgba(59, 130, 246, 0.1); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.2); }
     [data-bs-theme="dark"] .badge-local, body[data-theme="dark"] .badge-local { color: #22c55e; }
@@ -189,7 +185,6 @@
         to { opacity: 1; transform: translateY(0); }
     }
     
-    /* Скроллбары для списка провайдеров */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.2); border-radius: 4px; }
@@ -229,7 +224,7 @@
                     
                     <div id="apiKeyContainer" style="display: none;">
                         <label class="form-label">Токен авторизации (API Key)</label>
-                        <input type="password" id="pApiKey" class="form-control custom-input" placeholder="Оставьте пустым, если не требуется" />
+                        <input type="password" id="pApiKey" class="form-control custom-input" />
                     </div>
 
                     <div class="form-check form-switch custom-switch py-2 d-flex align-items-center gap-2">
@@ -259,7 +254,6 @@
 
 @section Scripts {
     <script>
-        // Управление видимостью поля API ключа
         function toggleApiKeyField() {
             const isLocal = document.getElementById("pIsLocal").checked;
             const container = document.getElementById("apiKeyContainer");
@@ -274,7 +268,6 @@
             }
         }
 
-        // Загрузка и отрисовка красивых карточек провайдеров
         async function loadProviders() {
             try {
                 const response = await fetch('/Settings/GetProviders');
@@ -293,24 +286,33 @@
 
                 providers.forEach(p => {
                     const badge = p.isLocal 
-                        ? `<span class="status-badge badge-local"><i class="bi bi-pc-display me-1"></i> Локально</span>` 
-                        : `<span class="status-badge badge-cloud"><i class="bi bi-cloud-fill me-1"></i> API</span>`;
+                        ? `<span class="status-badge badge-local"><i class="bi bi-pc-display me-1"></i> Local</span>` 
+                        : `<span class="status-badge badge-cloud"><i class="bi bi-cloud-fill me-1"></i> Cloud</span>`;
                     
+                    const apiKeyHtml = p.apiKey 
+                        ? `<div class="mt-1"><i class="bi bi-key me-1 opacity-75"></i><span style="word-break: break-all;">${p.apiKey}</span></div>` 
+                        : '';
+
                     container.innerHTML += `
-                        <div class="provider-item-card">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="background: rgba(139, 92, 246, 0.1); width: 40px; height: 40px;">
+                        <div class="provider-item-card align-items-start">
+                            <div class="d-flex align-items-start gap-3 w-100 pe-3">
+                                <div class="rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="background: rgba(139, 92, 246, 0.1); width: 40px; height: 40px;">
                                     <i class="bi bi-hdd-network text-accent" style="color:#8b5cf6; font-size:1.2rem;"></i>
                                 </div>
-                                <div>
-                                    <div class="fw-bold text-white mb-1">${p.name}</div>
-                                    <div class="text-muted small text-truncate" style="max-width: 320px;">${p.modelName} • <span style="font-size: 0.75rem;">${p.apiUrl}</span></div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold mb-2">${p.name}</div>
+                                    
+                                    <div class="text-muted small" style="line-height: 1.6;">
+                                        <div><i class="bi bi-box me-1 opacity-75"></i>${p.modelName}</div>
+                                        <div class="mt-1"><i class="bi bi-link-45deg me-1 opacity-75"></i><span style="word-break: break-all;">${p.apiUrl}</span></div>
+                                        ${apiKeyHtml}
+                                    </div>
                                 </div>
                             </div>
                             
-                            <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex flex-column align-items-end gap-2 flex-shrink-0">
                                 ${badge}
-                                <button type="button" class="btn btn-action-icon" title="Удалить конфигурацию" onclick="deleteProvider('${p.id}')">
+                                <button type="button" class="btn btn-action-icon mt-auto" title="Удалить конфигурацию" onclick="deleteProvider('${p.id}')">
                                     <i class="bi bi-trash3-fill"></i>
                                 </button>
                             </div>
@@ -322,11 +324,9 @@
             }
         }
 
-        // Отправка формы (POST запрос JSON данных)
         document.getElementById("providerForm").addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            // Собираем данные. Обрати внимание: для чекбокса используем .checked
             const providerData = {
                 name: document.getElementById("pName").value,
                 isLocal: document.getElementById("pIsLocal").checked, 
@@ -343,15 +343,14 @@
 
             if (response.ok) {
                 document.getElementById("providerForm").reset();
-                document.getElementById("pIsLocal").checked = true; // Сброс чекбокса по умолчанию
+                document.getElementById("pIsLocal").checked = true;
                 toggleApiKeyField(); 
-                await loadProviders(); // Сразу перерисовываем карточки
+                await loadProviders(); 
             } else {
                 alert("Не удалось добавить провайдера. Проверьте правильность данных.");
             }
         });
 
-        // Удаление (DELETE запрос)
         async function deleteProvider(id) {
             if (!confirm("Вы уверены, что хотите удалить эту конфигурацию?")) return;
 
@@ -366,7 +365,6 @@
             }
         }
 
-        // Инициализация при открытии страницы
         document.addEventListener("DOMContentLoaded", () => {
             toggleApiKeyField();
             loadProviders();

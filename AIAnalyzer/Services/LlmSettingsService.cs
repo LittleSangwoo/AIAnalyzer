@@ -6,9 +6,8 @@ namespace AIAnalyzer.Services
     public class LlmSettingsService
     {
         private readonly string _filePath = "llm_providers.json";
-        private readonly object _lock = new object(); // Защита от одновременной записи разными юзерами
+        private readonly object _lock = new object(); 
 
-        // Получить все нейросети
         public List<LlmProvider> GetAllProviders()
         {
             if (!File.Exists(_filePath)) return new List<LlmProvider>();
@@ -20,7 +19,6 @@ namespace AIAnalyzer.Services
             }
         }
 
-        // Добавить новую нейросеть
         public void AddProvider(LlmProvider provider)
         {
             var providers = GetAllProviders();
@@ -28,7 +26,6 @@ namespace AIAnalyzer.Services
             SaveProviders(providers);
         }
 
-        // Удалить нейросеть
         public void DeleteProvider(string id)
         {
             var providers = GetAllProviders();

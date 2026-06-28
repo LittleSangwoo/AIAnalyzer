@@ -31,12 +31,12 @@
     "ModelName": "my-llama",
     "ApiKey": ""
   },
-  {
-    "Id": "f7a98f79-17f5-4482-8131-40a4dc2e7ece",
-    "Name": "groq2",
-    "IsLocal": false,
-    "ApiUrl": "https://api.groq.com/openai/v1/chat/completions",
-    "ModelName": "llama-3.3-70b-versatile",
-    "ApiKey": "-"
-  }
+    {
+        "Id": "f7a98f79-17f5-4482-8131-40a4dc2e7ece",
+        "Name": "groq2",
+        "IsLocal": false,
+        "ApiUrl": "https://api.groq.com/openai/v1/chat/completions",
+        "ModelName": "llama-3.3-70b-versatile",
+        "ApiKey": "-"
+    }
 ]

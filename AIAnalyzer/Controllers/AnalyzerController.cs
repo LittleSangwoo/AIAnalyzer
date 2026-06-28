@@ -1,4 +1,5 @@
-﻿using AIAnalyzer.Services;
+﻿using AIAnalyzer.Models.DTOs;
+using AIAnalyzer.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AIAnalyzer.Controllers
@@ -8,18 +9,36 @@ namespace AIAnalyzer.Controllers
     public class AnalyzerController : ControllerBase
     {
         private readonly ITestAnalysisService _analysisService;
+        private readonly IReportService _reportService;
 
-        public AnalyzerController(ITestAnalysisService analysisService)
+        public AnalyzerController(ITestAnalysisService analysisService, IReportService reportService)
         {
             _analysisService = analysisService;
+            _reportService = reportService;
         }
 
+        public class ExportRequestDto
+        {
+            public List<QuestionStatDto> Questions { get; set; } = new();
+            public string? AiRecommendation { get; set; }
+        }
 
+        [HttpPost("export")]
+        public IActionResult ExportToExcel([FromBody] ExportRequestDto request)
+        {
+            if (request.Questions == null || !request.Questions.Any())
+                return BadRequest("Нет данных для выгрузки.");
 
+            var aiText = string.IsNullOrWhiteSpace(request.AiRecommendation) ? "" : request.AiRecommendation;
 
+            var fileBytes = _reportService.GenerateExcelReport(request.Questions, aiText);
+
+            return File(fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "SmartAnalytics_Report.xlsx");
+        }
 
         [HttpPost("upload")]
-        // Убрали IFormFile etalonFile, поменяли answersFile на массив List<IFormFile>
         public IActionResult UploadFiles([FromForm] List<IFormFile> answersFiles)
         {
             if (answersFiles == null || answersFiles.Count == 0)
@@ -33,10 +52,8 @@ namespace AIAnalyzer.Controllers
                     answersData.Add((file.OpenReadStream(), file.FileName));
                 }
 
-                // Передаем только ответы
                 var result = _analysisService.Analyze(answersData);
 
-                // Очищаем потоки
                 foreach (var data in answersData)
                 {
                     data.stream.Dispose();
