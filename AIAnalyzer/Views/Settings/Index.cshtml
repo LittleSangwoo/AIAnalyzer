@@ -1,67 +1,209 @@
 ﻿@{
-    ViewData["Title"] = "Настройки провайдеров ИИ";
+    ViewData["Title"] = "Настройки ИИ провайдеров";
 }
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 class="mb-0">Управление провайдерами нейросетей</h2>
-        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-            <i class="bi bi-arrow-left"></i> Назад
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    body {
+        background-color: #0f172a !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    .settings-card {
+        background: #1e293b !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.4) !important;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: fadeInUp 0.45s ease forwards;
+    }
+
+    .settings-card:hover {
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6) !important;
+    }
+
+    .section-title {
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .custom-input {
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 10px !important;
+        color: #f8fafc !important;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        transition: all 0.2s ease-in-out !important;
+    }
+
+    .custom-input:focus {
+        background-color: rgba(15, 23, 42, 0.9) !important;
+        border-color: #8b5cf6 !important;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2) !important;
+        outline: none;
+    }
+
+    .form-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+    }
+
+    .custom-switch .form-check-input {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+        width: 2.5em;
+        height: 1.25em;
+        transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+    }
+    .custom-switch .form-check-input:checked {
+        background-color: #8b5cf6;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+    }
+
+    .provider-item-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s ease;
+        animation: fadeInUp 0.3s ease forwards;
+    }
+
+    .provider-item-card:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(139, 92, 246, 0.3);
+        transform: translateX(4px);
+    }
+
+    .status-badge {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    .badge-local { background: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2); }
+    .badge-cloud { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
+
+    .btn-premium-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+        border: none !important;
+        color: white !important;
+        border-radius: 10px !important;
+        padding: 10px 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3) !important;
+        transition: all 0.2s ease !important;
+    }
+    .btn-premium-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5) !important;
+    }
+
+    .btn-action-icon {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: #94a3b8;
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+    }
+    .btn-action-icon:hover {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.2);
+    }
+
+    @@keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Скроллбары для списка провайдеров */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+</style>
+
+<div class="container py-5" style="max-width: 1200px;">
+    
+    <div class="mb-4" style="animation: fadeInUp 0.3s ease forwards;">
+        <a asp-controller="Home" asp-action="Index" class="text-decoration-none text-muted small fw-medium d-inline-flex align-items-center gap-2">
+            <i class="bi bi-arrow-left"></i> Вернуться к аналитике матриц
         </a>
     </div>
-    <p class="text-muted">Настройки применяются глобально для всех сессий аналитики.</p>
 
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h5 class="card-title">Добавить новую нейросеть</h5>
-            <form id="providerForm">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Название подключения</label>
-                        <input type="text" id="pName" class="form-control" placeholder="например, Локальная Llama 3" required>
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="settings-card p-4 h-100">
+                <h5 class="section-title mb-4">
+                    <i class="bi bi-plus-circle-fill text-primary"></i> Новый интегратор
+                </h5>
+                
+                <form id="providerForm" class="d-flex flex-column gap-3">
+                    <div>
+                        <label class="form-label">Условное название</label>
+                        <input type="text" id="pName" class="form-control custom-input" placeholder="Например: Локальная Llama 3" required />
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Тип размещения</label>
-                        <select id="pIsLocal" class="form-select" onchange="toggleApiKeyField()">
-                            <option value="true">Локальная сеть (Ollama)</option>
-                            <option value="false">Облачное API (Groq / Cloud)</option>
-                        </select>
+                    
+                    <div>
+                        <label class="form-label">Адрес шлюза API (Endpoint)</label>
+                        <input type="url" id="pApiUrl" class="form-control custom-input" placeholder="http://localhost:1234/v1" required />
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Имя модели (в Ollama/API)</label>
-                        <input type="text" id="pModelName" class="form-control" placeholder="например, llama3" required>
+                    
+                    <div>
+                        <label class="form-label">Имя целевой модели</label>
+                        <input type="text" id="pModelName" class="form-control custom-input" placeholder="meta-llama-3-8b-instruct" required />
                     </div>
-                    <div class="col-md-8">
-                        <label class="form-label">Адрес API (Endpoint URL)</label>
-                        <input type="url" id="pApiUrl" class="form-control" placeholder="http://127.0.0.1:11434/v1/chat/completions" required>
+                    
+                    <div id="apiKeyContainer" style="display: none;">
+                        <label class="form-label">Токен авторизации (API Key)</label>
+                        <input type="password" id="pApiKey" class="form-control custom-input" placeholder="Оставьте пустым, если не требуется" />
                     </div>
-                    <div class="col-md-4" id="apiKeyContainer" style="display: none;">
-                        <label class="form-label">API Ключ</label>
-                        <input type="password" id="pApiKey" class="form-control" placeholder="sk-...">
+
+                    <div class="form-check form-switch custom-switch py-2 d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="checkbox" id="pIsLocal" onchange="toggleApiKeyField()" checked>
+                        <label class="form-label mb-0" for="pIsLocal" style="cursor:pointer;">Локальное развертывание</label>
                     </div>
-                </div>
-                <button type="submit" class="btn btn-primary mt-3">Добавить провайдера</button>
-            </form>
+
+                    <button type="submit" class="btn btn-premium-primary w-100 mt-2">
+                        <i class="bi bi-cloud-arrow-up-fill me-2"></i> Подключить провайдер
+                    </button>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <h5 class="card-title">Добавленные конфигурации</h5>
-            <div class="table-responsive">
-                <table class="table table-striped align-middle">
-                    <thead>
-                        <tr>
-                            <th>Название</th>
-                            <th>Тип</th>
-                            <th>Модель</th>
-                            <th>Адрес API</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody id="providersTableBody">
-                    </tbody>
-                </table>
+        <div class="col-lg-7">
+            <div class="settings-card p-4 h-100 d-flex flex-column">
+                <h5 class="section-title mb-4">
+                    <i class="bi bi-cpu-fill text-accent" style="color:#8b5cf6;"></i> Активные конфигурации ИИ
+                </h5>
+
+                <div id="providersList" class="flex-grow-1 overflow-auto pe-2" style="max-height: 480px;">
+                    </div>
             </div>
         </div>
     </div>
@@ -69,9 +211,9 @@
 
 @section Scripts {
     <script>
-        // Функция скрытия/показа поля API-ключа в зависимости от выбора типа
+        // Управление видимостью поля API ключа
         function toggleApiKeyField() {
-            const isLocal = document.getElementById("pIsLocal").value === "true";
+            const isLocal = document.getElementById("pIsLocal").checked;
             const container = document.getElementById("apiKeyContainer");
             const apiKeyInput = document.getElementById("pApiKey");
             
@@ -81,45 +223,65 @@
                 apiKeyInput.value = "";
             } else {
                 container.style.display = "block";
-                apiKeyInput.setAttribute("required", "required");
             }
         }
 
-        // Загрузка списка провайдеров при старте страницы
+        // Загрузка и отрисовка красивых карточек провайдеров
         async function loadProviders() {
-            const response = await fetch('/Settings/GetProviders');
-            const providers = await response.json();
-            const tbody = document.getElementById("providersTableBody");
-            tbody.innerHTML = "";
+            try {
+                const response = await fetch('/Settings/GetProviders');
+                const providers = await response.json();
+                const container = document.getElementById("providersList");
+                container.innerHTML = "";
 
-            if(providers.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Провайдеры не настроены. Добавьте первый сервер выше.</td></tr>`;
-                return;
+                if(providers.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-5 text-muted opacity-50">
+                            <i class="bi bi-database-exclamation fs-1 d-block mb-3"></i>
+                            Список подключений пуст. Добавьте первый шлюз слева.
+                        </div>`;
+                    return;
+                }
+
+                providers.forEach(p => {
+                    const badge = p.isLocal 
+                        ? `<span class="status-badge badge-local"><i class="bi bi-pc-display me-1"></i> Local</span>` 
+                        : `<span class="status-badge badge-cloud"><i class="bi bi-cloud-fill me-1"></i> Cloud</span>`;
+                    
+                    container.innerHTML += `
+                        <div class="provider-item-card">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="background: rgba(139, 92, 246, 0.1); width: 40px; height: 40px;">
+                                    <i class="bi bi-hdd-network text-accent" style="color:#8b5cf6; font-size:1.2rem;"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-white mb-1">${p.name}</div>
+                                    <div class="text-muted small text-truncate" style="max-width: 320px;">${p.modelName} • <span style="font-size: 0.75rem;">${p.apiUrl}</span></div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-center gap-3">
+                                ${badge}
+                                <button type="button" class="btn btn-action-icon" title="Удалить конфигурацию" onclick="deleteProvider('${p.id}')">
+                                    <i class="bi bi-trash3-fill"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Ошибка загрузки:", error);
             }
-
-            providers.forEach(p => {
-                const badge = p.isLocal ? '<span class="badge bg-success">Локальный</span>' : '<span class="badge bg-info text-dark">Облако</span>';
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${p.name}</strong></td>
-                        <td>${badge}</td>
-                        <td><code>${p.modelName}</code></td>
-                        <td class="text-muted small">${p.apiUrl}</td>
-                        <td>
-                            <button class="btn btn-sm btn-danger" onclick="deleteProvider('${p.id}')">Удалить</button>
-                        </td>
-                    </tr>
-                `;
-            });
         }
 
-        // Обработка отправки формы (Добавление)
+        // Отправка формы (POST запрос JSON данных)
         document.getElementById("providerForm").addEventListener("submit", async (e) => {
             e.preventDefault();
 
+            // Собираем данные. Обрати внимание: для чекбокса используем .checked
             const providerData = {
                 name: document.getElementById("pName").value,
-                isLocal: document.getElementById("pIsLocal").value === "true",
+                isLocal: document.getElementById("pIsLocal").checked, 
                 modelName: document.getElementById("pModelName").value,
                 apiUrl: document.getElementById("pApiUrl").value,
                 apiKey: document.getElementById("pApiKey").value
@@ -133,14 +295,15 @@
 
             if (response.ok) {
                 document.getElementById("providerForm").reset();
-                toggleApiKeyField();
-                await loadProviders(); // Перерисовываем таблицу
+                document.getElementById("pIsLocal").checked = true; // Сброс чекбокса по умолчанию
+                toggleApiKeyField(); 
+                await loadProviders(); // Сразу перерисовываем карточки
             } else {
-                alert("Ошибка при сохранении провайдера");
+                alert("Не удалось добавить провайдера. Проверьте правильность данных.");
             }
         });
 
-        // Функция удаления
+        // Удаление (DELETE запрос)
         async function deleteProvider(id) {
             if (!confirm("Вы уверены, что хотите удалить эту конфигурацию?")) return;
 
@@ -155,7 +318,10 @@
             }
         }
 
-        // Инициализация страницы
-        document.addEventListener("DOMContentLoaded", loadProviders);
+        // Инициализация при открытии страницы
+        document.addEventListener("DOMContentLoaded", () => {
+            toggleApiKeyField();
+            loadProviders();
+        });
     </script>
 }
