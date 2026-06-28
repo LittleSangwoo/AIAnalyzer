@@ -31,9 +31,11 @@
                 
                 <div class="d-flex align-items-center gap-3">
                     
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Settings" asp-action="Index">Настройки ИИ</a>
-                    </li>
+                    
+                        <a asp-controller="Settings" asp-action="Index" class="btn btn-header-settings">
+                            <i class="bi bi-sliders2 me-2"></i>Настройки ИИ
+                        </a>
+                    
                     <div class="d-flex align-items-center bg-body-tertiary rounded-pill px-2 py-1 border" style="border-color: var(--app-border) !important;">
                         <button class="btn btn-link text-body-secondary p-0 text-decoration-none px-2" onclick="changeFontSize(-1)" title="Уменьшить шрифт">А-</button>
                         <div class="vr mx-1"></div>
