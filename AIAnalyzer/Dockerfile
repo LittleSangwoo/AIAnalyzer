@@ -33,4 +33,11 @@ RUN dotnet publish "./AIAnalyzer.csproj" -c $BUILD_CONFIGURATION -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Временно переключаемся на root, чтобы раздать права на всю папку
+USER root
+RUN chown -R app:app /app
+
+# Возвращаемся на безопасного пользователя
+USER app
 ENTRYPOINT ["dotnet", "AIAnalyzer.dll"]
