@@ -15,12 +15,12 @@
     "ModelName": "llama-3.3-70b-versatile",
     "ApiKey": "-"
   },
-  {
-    "Id": "0857b072-447c-444e-ab34-e939ae22075c",
-    "Name": "ollama local",
-    "IsLocal": true,
-    "ApiUrl": "http://127.0.0.1:11434/v1/chat/completions",
-    "ModelName": "ollama",
-    "ApiKey": ""
-  }
+    {
+        "Id": "0857b072-447c-444e-ab34-e939ae22075c",
+        "Name": "ollama local",
+        "IsLocal": true,
+        "ApiUrl": "http://127.0.0.1:11434/v1/chat/completions",
+        "ModelName": "my-llama",
+        "ApiKey": "ollama"
+    }
 ]

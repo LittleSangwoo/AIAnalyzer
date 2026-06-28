@@ -1,7 +1,8 @@
-﻿version: '3.8'
+﻿# Файл: docker-compose.yml
+version: '3.8'
 
 services:
-  # Первый контейнер: Твое веб-приложение
+  # 1. Основной контейнер с веб-сайтом (Запускается по умолчанию)
   analyzer-web:
     build:
       context: ..
@@ -9,14 +10,15 @@ services:
     ports:
       - "8080:8080"
 
-  # Второй контейнер: Локальный сервер ИИ (Ollama)
+  # 2. Опциональный контейнер с сервером ИИ (Скрыт за профилем)
   ollama-server:
     image: ollama/ollama:latest
+    container_name: aianalyzer-ollama-server-1
     ports:
       - "11434:11434"
+    profiles:
+      - manual-ai # <-- ВОТ ГЛАВНАЯ МАГИЯ! Этот контейнер теперь игнорируется при обычном запуске
     volumes:
-      - ollama_data:/root/.ollama # Сохраняет скачанную модель, чтобы не качать ее каждый раз при перезапуске
+      # Магия здесь: делимся папкой Олламы из Windows внутрь Linux-контейнера
+      - C:\Users\LittleSangwoo\.ollama:/root/.ollama
 
-# Выделяем место на жестком диске под базу ИИ
-volumes:
-  ollama_data:
