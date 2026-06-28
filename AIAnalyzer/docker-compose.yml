@@ -16,9 +16,7 @@ services:
     container_name: aianalyzer-ollama-server-1
     ports:
       - "11434:11434"
-    profiles:
-      - manual-ai # <-- ВОТ ГЛАВНАЯ МАГИЯ! Этот контейнер теперь игнорируется при обычном запуске
     volumes:
-      # Магия здесь: делимся папкой Олламы из Windows внутрь Linux-контейнера
+      # Заставляем контейнер читать папку прямо с твоего диска C
       - C:\Users\LittleSangwoo\.ollama:/root/.ollama
 

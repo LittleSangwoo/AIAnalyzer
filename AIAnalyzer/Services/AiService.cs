@@ -1,13 +1,14 @@
-﻿using System;
-using System.Text;
-using System.Text.Json;
-using System.Net.Http;
-using System.Threading.Tasks;
+﻿using AIAnalyzer.Models;
+using AIAnalyzer.Models.DTOs;
+using Microsoft.Extensions.Configuration;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.Configuration;
-using AIAnalyzer.Models.DTOs;
+using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace AIAnalyzer.Services
 {
@@ -177,41 +178,69 @@ namespace AIAnalyzer.Services
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd("AIAnalyzerApp/1.0");
 
-            string section = modelProvider switch
-            {
-                "gigachat" => "GigaChat",
-                "groq" => "Groq",
-                "local" => "LocalAI", // Направляем на новую секцию в appsettings.json
-                _ => throw new InvalidOperationException($"Провайдер '{modelProvider}' не настроен в системе.")
-            };
-
-            string apiUrl = _configuration[$"AiSettings:{section}:ApiUrl"];
-            string modelName = _configuration[$"AiSettings:{section}:ModelName"];
-
-            // 1. Берем ключ, который ввели на сайте
+            string apiUrl = "";
+            string modelName = "";
             string finalApiKey = userApiKey;
+            bool isGigaChat = false;
 
-            // 2. Если на сайте пусто, решаем, откуда брать ключ
-            if (string.IsNullOrWhiteSpace(finalApiKey))
+            // 1. УМНЫЙ ПОИСК: Сначала ищем провайдера в твоем динамическом файле llm_providers.json
+            string providersFilePath = "llm_providers.json";
+            if (File.Exists(providersFilePath))
             {
-                if (modelProvider.ToLower() == "gigachat")
+                var jsonText = System.IO.File.ReadAllText(providersFilePath);
+                var providers = JsonSerializer.Deserialize<List<LlmProvider>>(jsonText);
+
+                // Ищем совпадение по имени провайдера (которое пришло с веб-интерфейса)
+                var provider = providers?.FirstOrDefault(p => p.Name == modelProvider || p.Id == modelProvider);
+                if (provider != null)
                 {
-                    // Идем за свежим токеном в Сбер
-                    finalApiKey = await GetSberAccessTokenAsync();
-                }
-                else
-                {
-                    // Берем постоянный ключ из appsettings
-                    finalApiKey = _configuration[$"AiSettings:{section}:ApiKey"];
+                    apiUrl = provider.ApiUrl;
+                    modelName = provider.ModelName;
+
+                    if (string.IsNullOrWhiteSpace(finalApiKey))
+                        finalApiKey = provider.ApiKey;
+
+                    // Проверяем, не Сбер ли это (ему нужна особая авторизация)
+                    if (provider.Name.ToLower().Contains("gigachat") || apiUrl.Contains("sberbank"))
+                        isGigaChat = true;
                 }
             }
 
+            // 2. РЕЗЕРВНЫЙ ПОИСК: Если в JSON не нашли, используем старый способ из appsettings.json
+            if (string.IsNullOrEmpty(apiUrl))
+            {
+                string section = modelProvider.ToLower() switch
+                {
+                    "gigachat" => "GigaChat",
+                    "groq" => "Groq",
+                    "local" => "LocalAI",
+                    _ => throw new InvalidOperationException($"Провайдер '{modelProvider}' не найден в конфигурации.")
+                };
+
+                apiUrl = _configuration[$"AiSettings:{section}:ApiUrl"];
+                modelName = _configuration[$"AiSettings:{section}:ModelName"];
+
+                if (string.IsNullOrWhiteSpace(finalApiKey))
+                    finalApiKey = _configuration[$"AiSettings:{section}:ApiKey"];
+
+                if (section == "GigaChat") isGigaChat = true;
+            }
+
+            // 3. Авторизация Сбера (получаем динамический токен)
+            if (isGigaChat && (string.IsNullOrWhiteSpace(finalApiKey) || finalApiKey == "-"))
+            {
+                finalApiKey = await GetSberAccessTokenAsync();
+            }
+
+            // Если ключ всё ещё пустой (например для локальной Олламы), ставим заглушку, чтобы код не падал
             if (string.IsNullOrWhiteSpace(finalApiKey))
-                throw new InvalidOperationException($"Ключ API для '{section}' не передан в интерфейсе и не найден в настройках.");
+            {
+                finalApiKey = "no-key-required";
+            }
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", finalApiKey.Trim());
 
-            // Добавляем принудительное требование русского языка к любому системному промпту
+            // Защита языка
             string forcedSystemPrompt = $"{systemPrompt} Твой язык общения — русский. Все ответы, рекомендации и заголовки должны быть на русском языке.";
 
             var requestBody = new
@@ -219,9 +248,9 @@ namespace AIAnalyzer.Services
                 model = modelName,
                 messages = new[]
                 {
-                    new { role = "system", content = forcedSystemPrompt },
-                    new { role = "user", content = userContent }
-                },
+            new { role = "system", content = forcedSystemPrompt },
+            new { role = "user", content = userContent }
+        },
                 temperature = 0.5
             };
 
