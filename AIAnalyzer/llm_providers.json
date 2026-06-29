@@ -5,7 +5,8 @@
     "IsLocal": false,
     "ApiUrl": "https://api.groq.com/openai/v1/chat/completions",
     "ModelName": "llama-3.3-70b-versatile",
-    "ApiKey": "-"
+    "ApiKey": "-",
+    "Scope": null
   },
   {
     "Id": "0857b072-447c-444e-ab34-e939ae22075c",
@@ -13,7 +14,8 @@
     "IsLocal": true,
     "ApiUrl": "http://ollama-server:11434/v1/chat/completions",
     "ModelName": "my-llama",
-    "ApiKey": "ollama"
+    "ApiKey": "ollama",
+    "Scope": null
   },
   {
     "Id": "2f598b2f-a25b-4252-844d-293807c346c2",
@@ -21,22 +23,16 @@
     "IsLocal": true,
     "ApiUrl": "http://ollama-server:11434/v1/chat/completions",
     "ModelName": "my-lamma",
-    "ApiKey": ""
+    "ApiKey": "",
+    "Scope": null
   },
   {
-    "Id": "20b0adc1-d89f-4673-978a-d950d5c33a26",
-    "Name": "windows ai local",
-    "IsLocal": true,
-    "ApiUrl": "http://127.0.0.1:11434/v1/chat/completions",
-    "ModelName": "my-llama",
-    "ApiKey": ""
-  },
-    {
-        "Id": "f7a98f79-17f5-4482-8131-40a4dc2e7ece",
-        "Name": "groq2",
-        "IsLocal": false,
-        "ApiUrl": "https://api.groq.com/openai/v1/chat/completions",
-        "ModelName": "llama-3.3-70b-versatile",
-        "ApiKey": "-"
-    }
+    "Id": "f7a98f79-17f5-4482-8131-40a4dc2e7ece",
+    "Name": "groq2",
+    "IsLocal": false,
+    "ApiUrl": "https://api.groq.com/openai/v1/chat/completions",
+    "ModelName": "llama-3.3-70b-versatile",
+    "ApiKey": "-",
+    "Scope": null
+  }
 ]
