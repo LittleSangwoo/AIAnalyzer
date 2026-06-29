@@ -114,7 +114,6 @@ body {
     transition: all 0.3s ease-in-out;
 }
 
-    /* Отрендеренный текст будет мягко проявляться из прозрачности */
     .ai-assistant-panel i.bi-stars + text,
     .ai-assistant-panel {
         animation: fadeInText 0.4s ease-in forwards;
@@ -130,7 +129,6 @@ body {
     }
 }
 
-/* Кастомный тонкий скроллбар для таблицы и ИИ */
 .scrollable-area::-webkit-scrollbar {
     width: 5px;
     height: 5px;
@@ -149,7 +147,6 @@ body {
         background: rgba(161, 161, 170, 0.6);
     }
 
-/* Кнопки ИИ */
 .btn-ai-action {
     border-radius: 12px;
     border: 1px solid var(--app-border);

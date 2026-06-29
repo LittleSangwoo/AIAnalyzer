@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace AIAnalyzer.Services
 {
-    // Этот интерфейс ищет AiController
+    // интерфейс ищет AiController
     public interface IReportService
     {
         byte[] GenerateExcelReport(List<QuestionStatDto> questions, string aiRecommendation);
@@ -18,7 +18,6 @@ namespace AIAnalyzer.Services
         {
             using var workbook = new XLWorkbook();
 
-            // ЛИСТ 1: СТАТИСТИКА ВОПРОСОВ
             var wsStats = workbook.Worksheets.Add("Статистика ошибок");
 
             var mainHeaderCell = wsStats.Cell("A1");
@@ -27,13 +26,13 @@ namespace AIAnalyzer.Services
             mainHeaderCell.Style.Font.SetFontSize(16);             
             mainHeaderCell.Style.Font.SetFontColor(XLColor.FromHtml("#1F497D")); 
 
-            string[] headers = { "ID Вопроса", "Текст вопроса", "Правильные ответы", "Количество ошибок", "Зона опасности" };
+            string[] headers = { "ID Вопроса", "Текст вопроса", "Правильные ответы", "Количество ошибок", "Процент ошибок", "Зона опасности" };
             for (int i = 0; i < headers.Length; i++)
             {
                 var cell = wsStats.Cell(3, i + 1);
                 cell.Value = headers[i];
                 cell.Style.Font.SetBold(true);                     
-                cell.Style.Font.SetFontColor(XLColor.White);       
+                cell.Style.Font.SetFontColor(XLColor.White);      
                 cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#2F3542");
                 cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
@@ -47,9 +46,14 @@ namespace AIAnalyzer.Services
                 wsStats.Cell(currentRow, 3).Value = q.CorrectCount;
                 wsStats.Cell(currentRow, 4).Value = q.ErrorsCount;
 
-                var zoneCell = wsStats.Cell(currentRow, 5);
+                // ВОТ ОН - ПРОЦЕНТ ОШИБОК
+                wsStats.Cell(currentRow, 5).Value = q.ErrorPercentage + "%";
+                wsStats.Cell(currentRow, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                // Зону опасности сдвинули на 6-ю колонку
+                var zoneCell = wsStats.Cell(currentRow, 6);
                 zoneCell.Value = q.Zone.ToString();
-                zoneCell.Style.Font.SetBold(true);                 
+                zoneCell.Style.Font.SetBold(true);
                 zoneCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
                 if (q.Zone == ErrorZone.Red || q.ErrorsCount >= 6)
@@ -80,13 +84,12 @@ namespace AIAnalyzer.Services
             wsStats.Column(2).Width = 50;
             wsStats.Column(2).Style.Alignment.WrapText = true;
 
-            // ЛИСТ 2: РЕКОМЕНДАЦИИ ИИ
             var wsAi = workbook.Worksheets.Add("Аналитика и рекомендации ИИ");
 
             var aiHeaderCell = wsAi.Cell("A1");
             aiHeaderCell.Value = "Заключение искусственного интеллекта";
-            aiHeaderCell.Style.Font.SetBold(true);                 
-            aiHeaderCell.Style.Font.SetFontSize(14);               
+            aiHeaderCell.Style.Font.SetBold(true);               
+            aiHeaderCell.Style.Font.SetFontSize(14);
             aiHeaderCell.Style.Font.SetFontColor(XLColor.FromHtml("#1F497D")); 
 
             var reportRange = wsAi.Range("A3:H25");
@@ -98,7 +101,7 @@ namespace AIAnalyzer.Services
 
             mainCell.Style.Alignment.WrapText = true;
             mainCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
-            mainCell.Style.Font.SetFontSize(11);                   
+            mainCell.Style.Font.SetFontSize(11);
 
             reportRange.Merge();
             reportRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;

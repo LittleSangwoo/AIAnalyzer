@@ -6,17 +6,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<LlmSettingsService>();
 
-// Подключаем провайдер кодировок для поддержки русского Excel (Windows-1251)
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-// 1. Добавляем HttpClient (нужна для ИИ-запросов)
+
 builder.Services.AddHttpClient();
 
-// Регистрация сервисов
-builder.Services.AddScoped<ITestAnalysisService, TestAnalysisService>(); 
-builder.Services.AddScoped<IReportService, ReportService>();             
+builder.Services.AddScoped<ITestAnalysisService, TestAnalysisService>();
+builder.Services.AddScoped<IReportService, ReportService>();           
 
-// 2. Регистрация ИИ-сервиса
 builder.Services.AddScoped<IAiService, AiService>();
 
 var app = builder.Build();

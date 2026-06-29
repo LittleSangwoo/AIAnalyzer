@@ -181,7 +181,8 @@ namespace AIAnalyzer.Services
             bool isGigaChat = false;
             string gigaChatScope = "GIGACHAT_API_PERS"; // Дефолтный скоуп
 
-            // 1. УМНЫЙ ПОИСК: Сначала ищем провайдера в файле
+            // 1. Ищем провайдера в файле
+
             string providersFilePath = "llm_providers.json";
             if (File.Exists(providersFilePath))
             {
@@ -200,8 +201,6 @@ namespace AIAnalyzer.Services
                     {
                         isGigaChat = true;
                         gigaChatScope = provider.Scope ?? "GIGACHAT_API_PERS";
-                        // ИСПРАВЛЕНИЕ: Мы БОЛЬШЕ НЕ ВЫЗЫВАЕМ здесь GetSberAccessTokenAsync.
-                        // Оставляем ключ как есть (в формате MDE...), чтобы обменять его ниже.
                     }
                 }
             }

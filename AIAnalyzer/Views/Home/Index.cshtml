@@ -41,7 +41,6 @@
         border-color: #ced4da !important;
     }
 
-    /* ── AI Chat styles ── */
     .ai-chat-history {
         display: flex;
         flex-direction: column;
@@ -137,7 +136,6 @@
             font-weight: 600;
         }
 
-    /* ── Compact action buttons ── */
     .btn-ai-action {
         display: flex;
         flex-direction: column;
@@ -166,9 +164,9 @@
     .btn-header-settings {
         background: rgba(255, 255, 255, 0.02) !important;
         border: 1px solid rgba(255, 255, 255, 0.07) !important;
-        color: #94a3b8 !important; /* Приглушенный slate-400 */
+        color: #94a3b8 !important;
         padding: 6px 16px !important;
-        border-radius: 20px !important; /* Закругленный премиальный вид капсулы */
+        border-radius: 20px !important; 
         font-size: 0.85rem !important;
         font-weight: 500 !important;
         display: inline-flex;
@@ -177,8 +175,8 @@
     }
 
         .btn-header-settings:hover {
-            background: rgba(139, 92, 246, 0.08) !important; /* Тонкий акцент */
-            border-color: #8b5cf6 !important; /* Сочный фиолетовый */
+            background: rgba(139, 92, 246, 0.08) !important;
+            border-color: #8b5cf6 !important; 
             color: #ffffff !important;
             box-shadow: 0 0 15px rgba(139, 92, 246, 0.25) !important;
             transform: translateY(-1px);
@@ -190,15 +188,13 @@
         }
 
         .btn-header-settings:hover i {
-            transform: rotate(180deg); /* Интерактивная микро-анимация иконки шестеренки/слайдера */
+            transform: rotate(180deg); 
         }
 
-    /* ── Адаптация кнопки "Настройки ИИ" под белую тему ── */
     [data-bs-theme="light"] .btn-header-settings,
     body[data-theme="light"] .btn-header-settings {
         background: rgba(0, 0, 0, 0.04) !important;
         border: 1px solid rgba(0, 0, 0, 0.08) !important;
-        color: #475569 !important; /* Глубокий серо-синий */
     }
 
         [data-bs-theme="light"] .btn-header-settings:hover,
@@ -209,10 +205,8 @@
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15) !important;
         }
 
-    /* ── Адаптация модального окна "Как пользоваться" ── */
     [data-bs-theme="light"] .modal-header,
     body[data-theme="light"] .modal-header {
-        /* Фиксируем градиент, чтобы он не пропадал в белой теме */
         background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
         border-bottom: none !important;
     }
@@ -220,11 +214,9 @@
         [data-bs-theme="light"] .modal-header .modal-title,
         [data-bs-theme="light"] .modal-header .bi,
         body[data-theme="light"] .modal-header .modal-title {
-            /* Принудительно делаем текст заголовка белым, чтобы он не сливался */
             color: #ffffff !important;
         }
 
-    /* ── Thinking indicator ── */
     .ai-thinking {
         display: flex;
         align-items: center;
@@ -235,41 +227,36 @@
         padding: 8px 0;
     }
 
-    /* ── Welcome placeholder ── */
     .ai-welcome {
         opacity: 0.6;
         font-size: 0.88rem;
         padding: 8px 0;
     }
 
-    /* Compact header in right panel */
     .ai-panel-header {
         padding-bottom: 8px !important;
     }
 
-    /* ── Обновленные адаптивные стили чата ИИ ── */
     .ai-chat-bubble {
         position: relative;
         padding: 14px 18px;
-        border-radius: 16px 16px 16px 4px; /* Стильный асимметричный радиус */
+        border-radius: 16px 16px 16px 4px;
         background-color: var(--app-surface-hover, rgba(255, 255, 255, 0.03));
         border: 1px solid var(--app-border, rgba(255, 255, 255, 0.08));
-        /* КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Переход на em для поддержки кнопок A+/A- */
         font-size: 0.92em !important;
         line-height: 1.6;
-        /* Анимация плавного появления (Пункт 4) */
         animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     .ai-markdown-content {
-        font-size: 1em !important; /* Наследует динамический размер от bubble */
+        font-size: 1em !important; 
         color: inherit;
     }
 
         .ai-markdown-content h1,
         .ai-markdown-content h2,
         .ai-markdown-content h3 {
-            font-size: 1.15em !important; /* Масштабируется относительно базового текста */
+            font-size: 1.15em !important;
             font-weight: 700;
             color: var(--app-accent, #8b5cf6);
             margin-top: 1rem;
@@ -284,7 +271,6 @@
 <div class="container-fluid" style="height: calc(100vh - 120px);">
     <div class="row g-4 h-100">
 
-        <!-- ── LEFT: Parameters ── -->
         <div class="col-xl-2 col-lg-2 d-flex flex-column h-100">
             <div class="pro-card flex-grow-1 d-flex flex-column">
                 <div class="pro-card-header">
@@ -307,14 +293,13 @@
             </div>
         </div>
 
-        <!-- ── CENTER: Results table ── -->
         <div class="col-xl-5 col-lg-5 d-flex flex-column h-100">
             <div class="pro-card flex-grow-1 d-flex flex-column">
                 <div class="pro-card-header pb-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0 fw-bold"><i class="bi bi-table me-2" style="color: var(--app-accent);"></i>Матрица результатов</h6>
                         <button class="btn btn-sm btn-outline-success fw-semibold shadow-sm light-theme-border"
-                                style="border-radius: 8px;" type="button" onclick="exportToExcel()">
+                                style="border-radius: 8px;" type="button" onclick="downloadExcelReport()">
                             <i class="bi bi-download me-1"></i> Excel
                         </button>
                     </div>
@@ -370,18 +355,15 @@
             </div>
         </div>
 
-        <!-- ── RIGHT: AI panel ── -->
         <div class="col-xl-5 col-lg-5 d-flex flex-column h-100">
             <div class="pro-card flex-grow-1 d-flex flex-column">
 
-                <!-- Header: title + model selector -->
                 <div class="pro-card-header ai-panel-header">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="mb-0 fw-bold">
                             <i class="bi bi-magic me-2" style="color: var(--app-accent);"></i>Интеллектуальный анализ
                         </h6>
                         <div class="d-flex align-items-center gap-2">
-                            <!-- Clear history -->
                             <button class="btn btn-sm border-0 px-2 opacity-50" type="button" onclick="clearHistory()"
                                     title="Очистить историю" style="font-size: 0.75rem; border-radius: 6px; background: var(--app-surface-hover);">
                                 <i class="bi bi-trash3"></i>
@@ -393,7 +375,6 @@
                                 <li><a class="dropdown-item model-select-item fw-bold text-success" href="#" data-val="local"><i class="bi bi-pc-display me-2"></i>Локальная сеть (LM Studio)</a></li>
                             </ul>
                             <input type="hidden" id="modelSelect" value="groq">
-                            <!-- Model selector -->
                             <div class="dropdown light-theme-border" style="border-radius: 20px; border: 1px solid var(--app-border);">
                                 <button class="btn btn-sm border-0 dropdown-toggle px-3 fw-semibold" type="button"
                                         id="modelDropdown" data-bs-toggle="dropdown" aria-expanded="false"
@@ -410,7 +391,6 @@
                         </div>
                     </div>
 
-                    <!-- Action buttons: compact row -->
                     <div class="d-flex gap-2 mb-2">
                         <button type="button" class="btn btn-ai-action btn-sm flex-fill" onclick="sendToAi('rewrite')"
                                 data-bs-toggle="tooltip" data-bs-placement="top"
@@ -432,7 +412,6 @@
                         </button>
                     </div>
 
-                    <!-- Custom prompt input -->
                     <div class="d-flex align-items-center light-theme-border"
                          style="border-radius: 25px; border: 1px solid var(--app-border); background-color: var(--app-surface-hover); padding: 4px 6px;">
                         <input type="text" id="customPrompt" class="form-control border-0 shadow-none bg-transparent"
@@ -447,7 +426,6 @@
                     </div>
                 </div>
 
-                <!-- Chat history area -->
                 <div class="card-body p-3 d-flex flex-column flex-grow-1" style="height: 0;">
                     <div id="ai-output"
                          class="scrollable-area flex-grow-1"
@@ -464,7 +442,6 @@
     </div>
 </div>
 
-<!-- Help button -->
 <button class="btn btn-info text-white rounded-circle shadow-lg d-flex align-items-center justify-content-center"
         style="position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px; z-index: 1050; font-size: 1.4rem; transition: transform 0.2s;"
         data-bs-toggle="modal" data-bs-target="#helpModal"
@@ -472,7 +449,6 @@
     <i class="bi bi-question-lg"></i>
 </button>
 
-<!-- Help modal -->
 <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
         <div class="modal-content shadow-lg border-0"
@@ -551,7 +527,6 @@
     <script>
         let selectedFiles = [];
 
-        // ── File list ──────────────────────────────────────────────────
         window.removeFile = function(index) {
             selectedFiles.splice(index, 1);
             renderFileList();
@@ -576,7 +551,6 @@
 
         async function loadModelDropdown() {
     try {
-        // Обращаемся к тому же методу, который сделали для страницы настроек
         const response = await fetch('/Settings/GetProviders');
         if (!response.ok) throw new Error('Ошибка сети');
 
@@ -584,7 +558,7 @@
         const dropdown = document.getElementById('dynamicModelList');
         if (!dropdown) return;
 
-        dropdown.innerHTML = ''; // Очищаем "Загрузка..."
+        dropdown.innerHTML = '';
 
         if (providers.length === 0) {
             dropdown.innerHTML = '<li><span class="dropdown-item text-muted">Нет настроенных ИИ. Добавьте их в настройках.</span></li>';
@@ -596,13 +570,11 @@
             const li = document.createElement('li');
             const a = document.createElement('a');
             
-            // Первый элемент делаем активным по умолчанию
             const isActive = index === 0 ? ' active fw-bold' : '';
             a.className = `dropdown-item model-select-item${isActive}`;
             a.href = '#';
-            a.setAttribute('data-val', p.name); // Или p.id, смотря что вы передаете в AIController
+            a.setAttribute('data-val', p.name); 
             
-            // Если ИИ локальный, добавляем иконку и зеленый цвет (как было в вашей верстке)
             if (p.isLocal) {
                 a.classList.add('text-success', 'fw-bold');
                 a.innerHTML = `<i class="bi bi-pc-display me-2"></i>${p.name}`;
@@ -610,7 +582,6 @@
                 a.innerHTML = p.name;
             }
 
-            // Обработчик клика для выбора модели
             a.addEventListener('click', function(e) {
                 e.preventDefault();
                 document.querySelectorAll('.model-select-item').forEach(el => el.classList.remove('active', 'fw-bold'));
@@ -623,7 +594,6 @@
             li.appendChild(a);
             dropdown.appendChild(li);
 
-            // Устанавливаем текст кнопки для первого (активного) элемента при загрузке
             if (index === 0) {
                 document.getElementById('modelSelect').value = p.name;
                 document.getElementById('selectedModelText').innerText = a.innerText;
@@ -634,7 +604,6 @@
     }
 }
 
-        // ── Chat history ───────────────────────────────────────────────
         const LABEL_MAP = {
             rewrite:         '✏️ Улучшить текст',
             course_redesign: '📘 Аудит курса',
@@ -649,7 +618,6 @@
 
         function showThinking(text) {
             const out = document.getElementById('ai-output');
-            // Remove any existing thinking indicator
             const existing = out.querySelector('.ai-thinking');
             if (existing) existing.remove();
 
@@ -664,7 +632,6 @@
         function appendBubble(label, markdownText) {
             const out = document.getElementById('ai-output');
 
-            // Remove welcome placeholder on first real message
             const welcome = out.querySelector('.ai-welcome');
             if (welcome) welcome.remove();
 
@@ -702,7 +669,69 @@
             });
         };
 
-        // ── AI response helper ─────────────────────────────────────────
+        async function downloadExcelReport() {
+        if (!window.loadedQuestions || window.loadedQuestions.length === 0) {
+        alert("Нет данных для выгрузки. Сначала загрузите файлы.");
+        return;
+        }
+
+        let aiText = "";
+        const aiBubbles = document.querySelectorAll('.ai-markdown-content');
+        aiBubbles.forEach(bubble => {
+        aiText += bubble.innerText + "\n\n";
+        });
+
+        const visibleIds = Array.from(document.querySelectorAll('#resultsBody tr.data-row'))
+        .filter(tr => tr.style.display !== 'none')
+        .map(tr => tr.querySelector('.question-cb').value);
+            
+        const filteredQuestions = window.loadedQuestions.filter(q =>
+        visibleIds.includes(String(q.questionId || q.QuestionId))
+        );
+
+        if (filteredQuestions.length === 0) {
+        alert("Нет данных, удовлетворяющих фильтру.");
+        return;
+        }
+
+        const requestData = {
+        questions: filteredQuestions,
+        aiRecommendation: aiText.trim()
+        };
+
+        const btn = document.querySelector('button[onclick="downloadExcelReport()"]');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Формируем...';
+        btn.disabled = true;
+
+        try {
+        const response = await fetch('/api/analyzer/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+        });
+
+        if (!response.ok) throw new Error("Ошибка при генерации Excel на сервере.");
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Отчет_ИИ_Аналитики_${new Date().toLocaleDateString('ru-RU')}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+                
+        } catch (error) {
+        console.error(error);
+        alert("Ошибка при скачивании файла: " + error.message);
+        } finally {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+        }
+        }
+
         async function processAiResponse(response, thinkingEl, label) {
             if (thinkingEl) thinkingEl.remove();
             if (!response.ok) throw new Error(await response.text());
@@ -714,7 +743,6 @@
             appendBubble(label, parsedText);
         }
 
-        // ── DOMContentLoaded ───────────────────────────────────────────
         document.addEventListener("DOMContentLoaded", function () {
             if (typeof marked !== 'undefined') {
                 marked.use({ breaks: true, gfm: true });
@@ -723,6 +751,8 @@
             document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 
         loadModelDropdown();
+
+
 
             document.getElementById('answersFiles').addEventListener('change', function(e) {
                 selectedFiles = selectedFiles.concat(Array.from(e.target.files));
@@ -757,6 +787,7 @@
 
                     const data = await response.json();
                     const questionsList = data.questions || data.Questions || [];
+        window.currentQuestionsData = questionsList;
                     window.loadedQuestions = questionsList;
                     renderTable(questionsList);
 
@@ -777,7 +808,6 @@
             });
         });
 
-        // ── Table helpers ──────────────────────────────────────────────
         function filterResults() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const showRed    = document.getElementById('filterRed').checked;
@@ -851,41 +881,8 @@
             });
         }
 
-        // ── Export ─────────────────────────────────────────────────────
-        function exportToExcel() {
-            if (typeof XLSX === 'undefined') { alert("Библиотека Excel ещё не загрузилась."); return; }
-            if (!window.loadedQuestions || window.loadedQuestions.length === 0) { alert("Нет данных для выгрузки."); return; }
+        
 
-            const visibleIds = Array.from(document.querySelectorAll('#resultsBody tr.data-row'))
-                .filter(tr => tr.style.display !== 'none')
-                .map(tr => tr.querySelector('.question-cb').value);
-
-            const filtered = window.loadedQuestions.filter(q => visibleIds.includes(String(q.questionId || q.QuestionId)));
-            if (filtered.length === 0) { alert("Нет данных, удовлетворяющих фильтру."); return; }
-
-            const excelData = filtered.map(q => {
-                const zoneVal = q.zone !== undefined ? q.zone : q.Zone;
-                let zoneText = 'Зелёная';
-                if (zoneVal === 2 || String(zoneVal).toLowerCase() === 'red')    zoneText = 'Красная';
-                else if (zoneVal === 1 || String(zoneVal).toLowerCase() === 'yellow') zoneText = 'Жёлтая';
-                return {
-                    "Идентификатор":      q.questionId    || q.QuestionId,
-                    "Текст вопроса":      q.questionText  || q.QuestionText,
-                    "Правильных ответов": q.correctCount  !== undefined ? q.correctCount  : q.CorrectCount,
-                    "Количество ошибок":  q.errorsCount   !== undefined ? q.errorsCount   : q.ErrorsCount,
-                    "Процент ошибок (%)": q.errorPercentage !== undefined ? q.errorPercentage : q.ErrorPercentage,
-                    "Зона риска":         zoneText
-                };
-            });
-
-            const ws = XLSX.utils.json_to_sheet(excelData);
-            ws['!cols'] = [{ wch: 15 }, { wch: 80 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 15 }];
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Статистика");
-            XLSX.writeFile(wb, `Статистика_курса_${new Date().toLocaleDateString('ru-RU')}.xlsx`);
-        }
-
-        // ── AI calls ───────────────────────────────────────────────────
         async function sendToAi(promptType) {
             if (!window.loadedQuestions || window.loadedQuestions.length === 0) {
                 alert("Сначала загрузите матрицу данных.");

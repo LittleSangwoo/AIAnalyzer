@@ -7,7 +7,7 @@ namespace AIAnalyzer.Controllers
     [Route("Settings")]
     public class SettingsController : Controller
     {
-        [HttpGet("")] // Это метод для получения страницы (Index)
+        [HttpGet("")] 
         public IActionResult Index()
         {
             return View();
@@ -19,14 +19,12 @@ namespace AIAnalyzer.Controllers
             _llmService = llmService;
         }
 
-        // Возвращает список для отображения в интерфейсе
         [HttpGet("GetProviders")]
         public IActionResult GetProviders()
         {
             return Json(_llmService.GetAllProviders());
         }
 
-        // Принимает данные с формы добавления
         [HttpPost("AddProvider")]
         public IActionResult AddProvider([FromBody] LlmProvider provider)
         {
@@ -34,7 +32,6 @@ namespace AIAnalyzer.Controllers
             return Ok();
         }
 
-        // Удаляет по ID
         [HttpDelete("DeleteProvider")]
         public IActionResult DeleteProvider(string id)
         {
