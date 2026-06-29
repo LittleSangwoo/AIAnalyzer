@@ -8,5 +8,6 @@
         public string ApiUrl { get; set; }
         public string ModelName { get; set; } // Например: "llama3"
         public string ApiKey { get; set; } // Для локальной можно оставлять пустым
+        public string? Scope { get; set; }//для сбера
     }
 }
