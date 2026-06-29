@@ -1,8 +1,14 @@
-# 🤖 AIAnalyzer
+<div align="center">
+  <h1>🤖 AIAnalyzer</h1>
+  <p><b>ИИ-агент для автоматизированного анализа результатов тестирования студентов и выработки методических рекомендаций.</b></p>
 
-> **ИИ-агент для автоматизированного анализа результатов тестирования студентов и выработки методических рекомендаций.** 
-
-Агент обрабатывает выгрузки из систем дистанционного обучения (в форматах `.xlsx` и `.csv`), формирует матрицу результатов успеваемости и использует алгоритмы больших языковых моделей (LLM) для глубокого аудита: 4]. Нейросеть выявляет паттерны ошибок, анализирует качество формулировок тестовых вопросов и предлагает стратегические шаги по улучшению образовательного курса: 5].
+  <p>
+    <img src="https://img.shields.io/badge/C%23-12.0-239120?style=for-the-badge&logo=c-sharp&logoColor=white" alt="C#">
+    <img src="https://img.shields.io/badge/ASP.NET_Core-8.0%2F10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt="ASP.NET Core">
+    <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
+    <img src="https://img.shields.io/badge/Ollama-Local_LLM-black?style=for-the-badge&logo=ollama&logoColor=white" alt="Ollama">
+  </p>
+</div>
 
 ---
 
