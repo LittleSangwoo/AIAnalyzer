@@ -83,7 +83,7 @@ namespace AIAnalyzer.Services
                     }
                 }
 
-                string intermediatePrompt = "Ты — аналитик. Твоя задача кратко выписать основные паттерны ошибок и проблемные темы из этой части данных. Не пиши длинных вступлений, только суть. Это пойдет в финальный отчет.";
+                string intermediatePrompt = "Ты — аналитик. Твоя задача кратко выписать основные паттерны ошибок и проблемные темы из этой части данных. Не пиши длинных вступлений, только суть. Это пойдет в финальный отчет. НИ В КОЕМ СЛУЧАЕ НЕ УПОМИНАЙ ID ДРУГИХ ВОПРОСОВ В КОРРЕКТИРОВКАХ ДЛЯ КОНКРЕТНОГО ВОПРОСА";
 
                 string aiResponse = await SendApiRequestAsync(intermediatePrompt, sb.ToString(), modelProvider.ToLower(), userApiKey);
                 intermediateAnalyses.Add($"### Анализ части {i + 1}\n{aiResponse}");

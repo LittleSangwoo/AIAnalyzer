@@ -20,7 +20,7 @@ namespace AIAnalyzer.Controllers
         public class ExportRequestDto
         {
             public List<QuestionStatDto> Questions { get; set; } = new();
-            public string? AiRecommendation { get; set; }
+            public List<string>? AiRecommendations { get; set; }
         }
 
         [HttpPost("export")]
@@ -29,9 +29,10 @@ namespace AIAnalyzer.Controllers
             if (request.Questions == null || !request.Questions.Any())
                 return BadRequest("Нет данных для выгрузки.");
 
-            var aiText = string.IsNullOrWhiteSpace(request.AiRecommendation) ? "" : request.AiRecommendation;
+            // Передаем список напрямую, если пуст — передаем пустой список
+            var aiList = request.AiRecommendations ?? new List<string>();
 
-            var fileBytes = _reportService.GenerateExcelReport(request.Questions, aiText);
+            var fileBytes = _reportService.GenerateExcelReport(request.Questions, aiList);
 
             return File(fileBytes,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

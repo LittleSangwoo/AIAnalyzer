@@ -671,36 +671,48 @@ function clearHistory() {
         saveHistoryItem(label, markdownText);
     }
 }
+function copyBubble(btn) {
+    // Ищем контент внутри текущего "пузыря"
+    const bubble = btn.closest('.ai-chat-bubble');
+    const contentDiv = bubble.querySelector('.ai-markdown-content');
+    const textToCopy = contentDiv.innerText;
 
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        // Меняем вид кнопки на "Скопировано"
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Скопировано';
+        btn.classList.add('copied');
+
+        // Возвращаем обратно через 2 секунды
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('copied');
+        }, 2000);
+    }).catch(err => {
+        console.error('Ошибка копирования:', err);
+    });
+}
         async function downloadExcelReport() {
-        if (!window.loadedQuestions || window.loadedQuestions.length === 0) {
-        alert("Нет данных для выгрузки. Сначала загрузите файлы.");
+    if (!window.loadedQuestions || window.loadedQuestions.length === 0) {
+        alert("Нет данных для выгрузки.");
         return;
-        }
+    }
 
-        let aiText = "";
-        const aiBubbles = document.querySelectorAll('.ai-markdown-content');
-        aiBubbles.forEach(bubble => {
-        aiText += bubble.innerText + "\n\n";
-        });
+    // Собираем массив ответов
+    const aiResponses = [];
+    const aiBubbles = document.querySelectorAll('.ai-markdown-content');
+    aiBubbles.forEach(bubble => {
+        aiResponses.push(bubble.innerText);
+    });
 
-        const visibleIds = Array.from(document.querySelectorAll('#resultsBody tr.data-row'))
+    const visibleIds = Array.from(document.querySelectorAll('#resultsBody tr.data-row'))
         .filter(tr => tr.style.display !== 'none')
         .map(tr => tr.querySelector('.question-cb').value);
             
-        const filteredQuestions = window.loadedQuestions.filter(q =>
-        visibleIds.includes(String(q.questionId || q.QuestionId))
-        );
-
-        if (filteredQuestions.length === 0) {
-        alert("Нет данных, удовлетворяющих фильтру.");
-        return;
-        }
-
-        const requestData = {
-        questions: filteredQuestions,
-        aiRecommendation: aiText.trim()
-        };
+    const requestData = {
+        questions: window.loadedQuestions, // <-- Передаем ВСЮ базу
+        aiRecommendations: aiResponses
+    };
 
         const btn = document.querySelector('button[onclick="downloadExcelReport()"]');
         const originalHtml = btn.innerHTML;
