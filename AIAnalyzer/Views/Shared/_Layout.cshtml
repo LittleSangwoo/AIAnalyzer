@@ -12,11 +12,11 @@
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
     <script>
-        const savedTheme = localStorage.getItem('app-theme') || 'light'; 
-        document.documentElement.setAttribute('data-bs-theme', savedTheme);
-        
-        const savedFontSize = localStorage.getItem('app-font-size') || '14';
-        document.documentElement.style.setProperty('--app-font-size', savedFontSize + 'px');
+            const savedTheme = localStorage.getItem('app-theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+
+            const savedFontSize = localStorage.getItem('app-font-size') || '14';
+            document.documentElement.style.setProperty('--app-font-size', savedFontSize + 'px');
     </script>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -29,14 +29,12 @@
                         AI<span style="color: var(--app-accent);">Analyzer</span>
                     </span>
                 </a>
-                
+
                 <div class="d-flex align-items-center gap-3">
-                    
-                    
-                        <a asp-controller="Settings" asp-action="Index" class="btn btn-header-settings">
-                            <i class="bi bi-sliders2 me-2"></i>Настройки ИИ
-                        </a>
-                    
+                    <a asp-controller="Settings" asp-action="Index" class="btn btn-header-settings">
+                        <i class="bi bi-sliders2 me-2"></i>Настройки ИИ
+                    </a>
+
                     <div class="d-flex align-items-center bg-body-tertiary rounded-pill px-2 py-1 border" style="border-color: var(--app-border) !important;">
                         <button class="btn btn-link text-body-secondary p-0 text-decoration-none px-2" onclick="changeFontSize(-1)" title="Уменьшить шрифт">А-</button>
                         <div class="vr mx-1"></div>
@@ -55,40 +53,61 @@
         @RenderBody()
     </main>
 
+    <div class="toast-container position-fixed bottom-0 end-0 p-4" id="toast-container"></div>
+
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content shadow-lg custom-modal bg-body">
+                <div class="modal-body p-4 text-center">
+                    <i id="confirmIcon" class="bi bi-question-circle text-primary mb-3" style="font-size: 3rem;"></i>
+                    <h5 class="mb-2 fw-bold" id="confirmTitle">Подтверждение</h5>
+                    <p class="text-body-secondary mb-4" id="confirmMessage">Вы уверены?</p>
+                    <div class="d-flex justify-content-center gap-2 mt-2">
+                        <button type="button" class="btn btn-light btn-rounded px-4" data-bs-dismiss="modal">Отмена</button>
+                        <button type="button" class="btn btn-primary btn-rounded px-4 shadow-sm" id="confirmYes">Да</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
     <script>
-        const themeToggleBtn = document.getElementById('themeToggle');
-        const themeIcon = document.getElementById('themeIcon');
-        
-        function updateIcon(theme) {
-        if (theme === 'dark') {
-        themeIcon.className = 'bi bi-sun-fill text-warning';
-        } else {
-        themeIcon.className = 'bi bi-moon-stars-fill text-secondary';
-        }
-        }
-        updateIcon(document.documentElement.getAttribute('data-bs-theme'));
+            const themeToggleBtn = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
 
-        themeToggleBtn.addEventListener('click', () => {
-        const currentTheme = document.documentElement.getAttribute('data-bs-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-bs-theme', newTheme);
-        localStorage.setItem('app-theme', newTheme);
-        updateIcon(newTheme);
-        });
+            function updateIcon(theme) {
+                if (theme === 'dark') {
+                    themeIcon.className = 'bi bi-sun-fill text-warning';
+                } else {
+                    themeIcon.className = 'bi bi-moon-stars-fill text-secondary';
+                }
+            }
+            updateIcon(document.documentElement.getAttribute('data-bs-theme'));
 
-        function changeFontSize(delta) {
-        let currentSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--app-font-size')) || 14;
-        currentSize += delta;
-        if (currentSize < 12) currentSize = 12; 
-        if (currentSize > 20) currentSize = 20; 
-            
-        document.documentElement.style.setProperty('--app-font-size', currentSize + 'px');
-        localStorage.setItem('app-font-size', currentSize);
-        }
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-bs-theme', newTheme);
+                localStorage.setItem('app-theme', newTheme);
+                updateIcon(newTheme);
+            });
+
+            function changeFontSize(delta) {
+                let currentSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--app-font-size')) || 14;
+                currentSize += delta;
+                if (currentSize < 12) currentSize = 12;
+                if (currentSize > 20) currentSize = 20;
+
+                document.documentElement.style.setProperty('--app-font-size', currentSize + 'px');
+                localStorage.setItem('app-font-size', currentSize);
+            }
     </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

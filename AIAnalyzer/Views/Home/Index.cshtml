@@ -622,10 +622,14 @@ function loadHistory() {
             custom:          '💬 Свой вопрос',
         };
 
-function clearHistory() {
-    localStorage.removeItem(AI_HISTORY_KEY); // Очистка истории
-    const out = document.getElementById('ai-output');
-    out.innerHTML = '<div class="ai-welcome"><i class="bi bi-stars me-2 text-primary"></i>История очищена. Готов к новым запросам.</div>';
+async function clearHistory() {
+    const isConfirmed = await confirmAction('Очистка чата', 'Вы уверены, что хотите удалить всю историю диалогов?', true);
+    if (isConfirmed) {
+        localStorage.removeItem(AI_HISTORY_KEY);
+        const out = document.getElementById('ai-output');
+        out.innerHTML = '<div class="ai-welcome"><i class="bi bi-stars me-2 text-primary"></i>История очищена. Готов к новым запросам.</div>';
+        showToast("История успешно очищена", "success");
+    }
 }
 
         function showThinking(text) {
@@ -694,9 +698,9 @@ function copyBubble(btn) {
 }
         async function downloadExcelReport() {
     if (!window.loadedQuestions || window.loadedQuestions.length === 0) {
-        alert("Нет данных для выгрузки.");
-        return;
-    }
+                showToast("Нет данных для выгрузки.", "warning"); 
+                return;
+            }
 
     // Собираем массив ответов
     const aiResponses = [];
@@ -720,31 +724,33 @@ function copyBubble(btn) {
         btn.disabled = true;
 
         try {
-        const response = await fetch('/api/analyzer/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestData)
-        });
+                const response = await fetch('/api/analyzer/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+                if (!response.ok) throw new Error("Ошибка при генерации Excel на сервере.");
 
-        if (!response.ok) throw new Error("Ошибка при генерации Excel на сервере.");
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Отчет_ИИ_Аналитики_${new Date().toLocaleDateString('ru-RU')}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Отчет_ИИ_Аналитики_${new Date().toLocaleDateString('ru-RU')}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
                 
-        } catch (error) {
-        console.error(error);
-        alert("Ошибка при скачивании файла: " + error.message);
-        } finally {
-        btn.innerHTML = originalHtml;
-        btn.disabled = false;
-        }
+                // Уведомление об успешном скачивании
+                showToast("Отчет успешно сформирован и скачан!", "success");
+
+            } catch (error) {
+                console.error(error);
+                showToast("Ошибка при скачивании файла: " + error.message, "error");
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
         }
 
         async function processAiResponse(response, thinkingEl, label) {
@@ -785,8 +791,8 @@ function copyBubble(btn) {
                 e.preventDefault();
                 const btn = document.getElementById('uploadBtn');
 
-                if (selectedFiles.length === 0) {
-                    alert("Пожалуйста, добавьте файлы для загрузки.");
+               if (selectedFiles.length === 0) {
+                    showToast("Пожалуйста, добавьте файлы для загрузки.", "warning"); 
                     return;
                 }
 
@@ -802,7 +808,8 @@ function copyBubble(btn) {
 
                     const data = await response.json();
                     const questionsList = data.questions || data.Questions || [];
-        window.currentQuestionsData = questionsList;
+                    
+                    window.currentQuestionsData = questionsList;
                     window.loadedQuestions = questionsList;
                     renderTable(questionsList);
 
@@ -814,8 +821,11 @@ function copyBubble(btn) {
 
                     selectedFiles = [];
                     renderFileList();
+                    
+                    showToast(`Успешно загружено вопросов: ${questionsList.length}`, 'success');
+
                 } catch (error) {
-                    alert("Ошибка системы: " + error.message);
+                    showToast("Ошибка системы: " + error.message, 'error');
                 } finally {
                     btn.innerHTML = 'Загрузить данные';
                     btn.disabled = false;
@@ -900,7 +910,7 @@ function copyBubble(btn) {
 
         async function sendToAi(promptType) {
             if (!window.loadedQuestions || window.loadedQuestions.length === 0) {
-                alert("Сначала загрузите матрицу данных.");
+                showToast("Сначала загрузите матрицу данных.", "warning"); 
                 return;
             }
 
@@ -954,7 +964,10 @@ function copyBubble(btn) {
 
         async function sendCustomPrompt() {
             const prompt = document.getElementById('customPrompt').value.trim();
-            if (!prompt) { alert("Введите текст запроса."); return; }
+            if (!prompt) { 
+                showToast("Введите текст запроса.", "warning"); 
+                return; 
+            }
 
             const thinkingEl = showThinking('Обдумываю ответ…');
 
