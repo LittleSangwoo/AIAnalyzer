@@ -9,12 +9,12 @@
     "Scope": null
   },
   {
-    "Id": "0857b072-447c-444e-ab34-e939ae22075c",
-    "Name": "ollama local",
-    "IsLocal": true,
-    "ApiUrl": "http://ollama-server:11434/v1/chat/completions",
-    "ModelName": "my-llama",
-    "ApiKey": "ollama",
+    "Id": "298ee187-abe1-4001-a23b-7056283fe80a",
+    "Name": "gigachatApi",
+    "IsLocal": false,
+    "ApiUrl": "https://gigachat.devices.sberbank.ru/api/v1/chat/completions",
+    "ModelName": "GigaChat",
+    "ApiKey": "",
     "Scope": null
   },
   {
@@ -24,15 +24,6 @@
     "ApiUrl": "http://ollama-server:11434/v1/chat/completions",
     "ModelName": "my-lamma",
     "ApiKey": "",
-    "Scope": null
-  },
-  {
-    "Id": "f7a98f79-17f5-4482-8131-40a4dc2e7ece",
-    "Name": "groq2",
-    "IsLocal": false,
-    "ApiUrl": "https://api.groq.com/openai/v1/chat/completions",
-    "ModelName": "llama-3.3-70b-versatile",
-    "ApiKey": "-",
     "Scope": null
   }
 ]
