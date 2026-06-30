@@ -22,7 +22,16 @@
     "Name": "ollama local1",
     "IsLocal": true,
     "ApiUrl": "http://ollama-server:11434/v1/chat/completions",
-    "ModelName": "my-lamma",
+    "ModelName": "llama3",
+    "ApiKey": "",
+    "Scope": null
+  },
+  {
+    "Id": "87179d76-753a-42f6-8529-2a989987237f",
+    "Name": "yandexgpt",
+    "IsLocal": false,
+    "ApiUrl": "https://ai.api.cloud.yandex.net/v1/chat/completions",
+    "ModelName": "gpt://b1g1i2lmp3nsmkf9793r/yandexgpt/latest",
     "ApiKey": "",
     "Scope": null
   }
