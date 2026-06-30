@@ -415,3 +415,240 @@ body {
     padding: 15px;
     margin-top: 10px;
 }
+/* ==========================================
+   СТИЛИ СТРАНИЦЫ АНАЛИТИКИ (Home/Index)
+   ========================================== */
+.btn-check:checked + .btn-outline-danger {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+.btn-check:checked + .btn-outline-warning {
+    background-color: #ffc107;
+    color: black;
+    border-color: #ffc107;
+}
+
+.btn-check:checked + .btn-outline-success {
+    background-color: #198754;
+    color: white;
+    border-color: #198754;
+}
+
+@media (prefers-color-scheme: light) {
+    html:not([data-bs-theme="dark"]) .pro-card {
+        border: 1px solid #ced4da !important;
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05) !important;
+    }
+
+    html:not([data-bs-theme="dark"]) .light-theme-border {
+        border-color: #ced4da !important;
+    }
+}
+
+html[data-bs-theme="light"] .pro-card, body[data-theme="light"] .pro-card {
+    border: 1px solid #ced4da !important;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05) !important;
+}
+
+html[data-bs-theme="light"] .light-theme-border, body[data-theme="light"] .light-theme-border {
+    border-color: #ced4da !important;
+}
+
+.ai-chat-history {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ai-chat-bubble {
+    position: relative;
+    padding: 14px 18px;
+    border-radius: 16px 16px 16px 4px;
+    background-color: var(--app-surface-hover, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--app-border, rgba(255, 255, 255, 0.08));
+    font-size: 0.92em !important;
+    line-height: 1.6;
+    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+    .ai-chat-bubble .bubble-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        gap: 8px;
+    }
+
+    .ai-chat-bubble .bubble-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--app-accent, #0d6efd);
+        opacity: 0.8;
+        white-space: nowrap;
+    }
+
+    .ai-chat-bubble .bubble-copy-btn {
+        flex-shrink: 0;
+        background: none;
+        border: 1px solid var(--app-border);
+        border-radius: 6px;
+        padding: 2px 7px;
+        font-size: 0.72rem;
+        cursor: pointer;
+        color: inherit;
+        opacity: 0.55;
+        transition: opacity 0.15s, background 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .ai-chat-bubble .bubble-copy-btn:hover {
+            opacity: 1;
+            background-color: rgba(13,110,253,0.1);
+        }
+
+        .ai-chat-bubble .bubble-copy-btn.copied {
+            color: #198754;
+            opacity: 1;
+            border-color: #198754;
+        }
+
+.ai-markdown-content {
+    font-size: 1em !important;
+    color: inherit;
+}
+
+    .ai-markdown-content h1, .ai-markdown-content h2, .ai-markdown-content h3 {
+        font-size: 1.15em !important;
+        font-weight: 700;
+        color: var(--app-accent, #8b5cf6);
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .ai-markdown-content p {
+        margin-bottom: 0.7rem;
+    }
+
+        .ai-markdown-content p:last-child {
+            margin-bottom: 0;
+        }
+
+    .ai-markdown-content ul, .ai-markdown-content ol {
+        padding-left: 1.3rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .ai-markdown-content li {
+        margin-bottom: 0.2rem;
+    }
+
+    .ai-markdown-content strong {
+        font-weight: 600;
+    }
+
+.btn-ai-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 4px !important;
+    line-height: 1.2;
+    border-radius: 10px !important;
+    background-color: var(--app-surface-hover);
+    border: 1px solid var(--app-border) !important;
+    color: inherit;
+    font-size: 0.75rem !important;
+    transition: background 0.15s, box-shadow 0.15s;
+}
+
+    .btn-ai-action:hover {
+        background-color: rgba(13,110,253,0.07);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .btn-ai-action i {
+        font-size: 1.1rem !important;
+    }
+
+.btn-header-settings {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    color: #94a3b8 !important;
+    padding: 6px 16px !important;
+    border-radius: 20px !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.25s ease !important;
+}
+
+    .btn-header-settings:hover {
+        background: rgba(139, 92, 246, 0.08) !important;
+        border-color: #8b5cf6 !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 15px rgba(139, 92, 246, 0.25) !important;
+        transform: translateY(-1px);
+    }
+
+    .btn-header-settings i {
+        font-size: 0.95rem;
+        transition: transform 0.3s ease;
+    }
+
+    .btn-header-settings:hover i {
+        transform: rotate(180deg);
+    }
+
+[data-bs-theme="light"] .btn-header-settings,
+body[data-theme="light"] .btn-header-settings {
+    background: rgba(0, 0, 0, 0.04) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+    [data-bs-theme="light"] .btn-header-settings:hover,
+    body[data-theme="light"] .btn-header-settings:hover {
+        background: rgba(139, 92, 246, 0.08) !important;
+        border-color: #8b5cf6 !important;
+        color: #7c3aed !important;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15) !important;
+    }
+
+[data-bs-theme="light"] .modal-header,
+body[data-theme="light"] .modal-header {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    border-bottom: none !important;
+}
+
+    [data-bs-theme="light"] .modal-header .modal-title,
+    [data-bs-theme="light"] .modal-header .bi,
+    body[data-theme="light"] .modal-header .modal-title {
+        color: #ffffff !important;
+    }
+
+.ai-thinking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--app-accent, #0d6efd);
+    font-weight: 600;
+    padding: 8px 0;
+}
+
+.ai-welcome {
+    opacity: 0.6;
+    font-size: 0.88rem;
+    padding: 8px 0;
+}
+
+.ai-panel-header {
+    padding-bottom: 8px !important;
+}
